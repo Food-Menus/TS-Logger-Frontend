@@ -17,6 +17,7 @@ async function getEmployees() {
   return result.data;
 }
 
+
 async function addEmployee(employeeData) {
   const response = await fetch(API_URL, {
     method: "POST",
@@ -38,7 +39,6 @@ async function addEmployee(employeeData) {
 
   return result;
 }
-
 
 
 async function updateEmployee(employeeID, employeeData) {
@@ -82,6 +82,31 @@ async function deleteEmployee(employeeID) {
 
   if (!result.success) {
     throw new Error(result.message || "Failed to delete employee.");
+  }
+
+  return result;
+}
+
+
+async function uploadEmployeeIDImage(employeeID, imageType, imageData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "uploadEmployeeIDImage",
+      employeeID: employeeID,
+      imageType: imageType,
+      imageData: imageData
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to upload image.");
   }
 
   return result;
