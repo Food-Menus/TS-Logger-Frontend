@@ -1,80 +1,38 @@
-
-* {
-  box-sizing: border-box;
+#employeeList {
+  overflow-x: auto;
+  margin-top: 20px;
 }
 
-body {
-  font-family: Arial, sans-serif;
-  background: #f3f4f6;
-  padding: 30px;
-  margin: 0;
-}
-
-.container {
-  max-width: 650px;
-  margin: auto;
-}
-
-h1 {
-  text-align: center;
-  color: #164e63;
-}
-
-section {
-  background: white;
-  padding: 25px;
-  margin-top: 25px;
-  border-radius: 12px;
-}
-
-h2 {
-  color: #164e63;
-  margin-top: 0;
-}
-
-.form-group {
-  margin-bottom: 18px;
-}
-
-label {
-  display: block;
-  margin-bottom: 7px;
-  font-weight: bold;
-}
-
-input {
+table {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 7px;
-  font-size: 15px;
+  border-collapse: collapse;
+  text-align: center;
+  background: white;
 }
 
-button {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 7px;
+th,
+td {
+  padding: 12px 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
   background: #164e63;
   color: white;
-  font-size: 15px;
-  cursor: pointer;
 }
 
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.edit-button {
+  background: #0d9488;
+  margin: 3px;
 }
 
-#message {
-  margin-bottom: 0;
-  font-weight: bold;
+.delete-button {
+  background: #dc2626;
+  margin: 3px;
 }
 
-#result {
-  direction: ltr;
-  text-align: left;
-  background: #f3f4f6;
-  padding: 15px;
-  border-radius: 7px;
-  overflow-x: auto;
+.edit-button,
+.delete-button {
+  padding: 8px 12px;
+  font-size: 13px;
 }
