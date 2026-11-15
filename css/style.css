@@ -11,7 +11,7 @@ body {
 }
 
 .container {
-  max-width: 650px;
+  max-width: 900px;
   margin: auto;
 }
 
@@ -70,15 +70,6 @@ button:disabled {
   font-weight: bold;
 }
 
-#result {
-  direction: ltr;
-  text-align: left;
-  background: #f3f4f6;
-  padding: 15px;
-  border-radius: 7px;
-  overflow-x: auto;
-}
-
 #employeeList {
   overflow-x: auto;
   margin-top: 20px;
@@ -89,6 +80,7 @@ table {
   border-collapse: collapse;
   text-align: center;
   background: white;
+  min-width: 650px;
 }
 
 th,
@@ -116,4 +108,30 @@ th {
 .delete-button {
   padding: 8px 12px;
   font-size: 13px;
+}
+
+.image-input {
+  display: block;
+  width: 160px;
+  max-width: 100%;
+  margin: 5px auto;
+  font-size: 12px;
+  padding: 5px;
+}
+
+.image-label {
+  display: block;
+  font-size: 12px;
+  margin-top: 8px;
+  color: #164e63;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 15px;
+  }
+
+  section {
+    padding: 18px;
+  }
 }
