@@ -1,4 +1,3 @@
-
 const employeeForm = document.getElementById("employeeForm");
 const saveEmployeeButton = document.getElementById("saveEmployeeButton");
 const messageElement = document.getElementById("message");
@@ -6,6 +5,11 @@ const messageElement = document.getElementById("message");
 const loadEmployeesButton = document.getElementById("loadEmployees");
 const employeeListElement = document.getElementById("employeeList");
 const employeeSearchInput = document.getElementById("employeeSearch");
+
+const imageModal = document.getElementById("imageModal");
+const modalImage = document.getElementById("modalImage");
+const imageModalTitle = document.getElementById("imageModalTitle");
+const closeImageModalButton = document.getElementById("closeImageModal");
 
 let employeesCache = [];
 
@@ -116,9 +120,10 @@ function renderEmployees(employees) {
     const rateCell = document.createElement("td");
     rateCell.textContent = employee.hourlyRate;
 
-    // ID image upload controls
+    // ID image controls
     const imagesCell = document.createElement("td");
 
+    // Front ID
     const frontLabel = document.createElement("label");
     frontLabel.className = "image-label";
     frontLabel.textContent = "الوجه الأمامي";
@@ -136,6 +141,25 @@ function renderEmployees(employees) {
       );
     });
 
+    imagesCell.append(frontLabel, frontImageInput);
+
+    if (employee.idFrontURL) {
+      const viewFrontButton = document.createElement("button");
+      viewFrontButton.type = "button";
+      viewFrontButton.textContent = "عرض الأمامي";
+      viewFrontButton.className = "view-image-button";
+
+      viewFrontButton.addEventListener("click", () => {
+        openImageModal(
+          employee.idFrontURL,
+          `صورة الوجه الأمامي - ${employee.employeeName}`
+        );
+      });
+
+      imagesCell.appendChild(viewFrontButton);
+    }
+
+    // Back ID
     const backLabel = document.createElement("label");
     backLabel.className = "image-label";
     backLabel.textContent = "الوجه الخلفي";
@@ -153,12 +177,23 @@ function renderEmployees(employees) {
       );
     });
 
-    imagesCell.append(
-      frontLabel,
-      frontImageInput,
-      backLabel,
-      backImageInput
-    );
+    imagesCell.append(backLabel, backImageInput);
+
+    if (employee.idBackURL) {
+      const viewBackButton = document.createElement("button");
+      viewBackButton.type = "button";
+      viewBackButton.textContent = "عرض الخلفي";
+      viewBackButton.className = "view-image-button";
+
+      viewBackButton.addEventListener("click", () => {
+        openImageModal(
+          employee.idBackURL,
+          `صورة الوجه الخلفي - ${employee.employeeName}`
+        );
+      });
+
+      imagesCell.appendChild(viewBackButton);
+    }
 
     // Action buttons
     const actionsCell = document.createElement("td");
@@ -191,6 +226,58 @@ function renderEmployees(employees) {
   table.appendChild(tbody);
   employeeListElement.appendChild(table);
 }
+
+
+// Convert Google Drive file URL to an image URL
+function getDriveImageURL(fileURL) {
+  const match = fileURL.match(/\/d\/([a-zA-Z0-9_-]+)/);
+
+  if (!match) {
+    throw new Error("رابط صورة البطاقة غير صالح.");
+  }
+
+  const fileID = match[1];
+
+  return `https://drive.google.com/thumbnail?id=${fileID}&sz=w1200`;
+}
+
+
+// Open image modal
+function openImageModal(imageURL, title) {
+  try {
+    modalImage.src = getDriveImageURL(imageURL);
+    imageModalTitle.textContent = title;
+
+    imageModal.classList.add("active");
+    imageModal.setAttribute("aria-hidden", "false");
+
+  } catch (error) {
+    messageElement.textContent = error.message;
+    messageElement.style.color = "red";
+  }
+}
+
+
+// Close image modal
+function closeImageModal() {
+  imageModal.classList.remove("active");
+  imageModal.setAttribute("aria-hidden", "true");
+  modalImage.src = "";
+}
+
+closeImageModalButton.addEventListener("click", closeImageModal);
+
+imageModal.addEventListener("click", (event) => {
+  if (event.target === imageModal) {
+    closeImageModal();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeImageModal();
+  }
+});
 
 
 // Search employees
