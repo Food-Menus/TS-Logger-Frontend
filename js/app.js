@@ -309,14 +309,45 @@ employeeListElement.addEventListener("click", async (event) => {
 
 
 // Edit employee
+
+// Edit employee
 async function handleEditEmployee(employeeID) {
   try {
     const employee = employeesCache.find(
-      item => Number(item.employeeID) === employeeID
+      item => Number(item.employeeID) === Number(employeeID)
     );
 
     if (!employee) {
       throw new Error("Employee not found.");
+    }
+
+    const newEmployeeID = prompt(
+      "أدخل الرقم الوظيفي الجديد:",
+      employee.employeeID
+    );
+
+    if (newEmployeeID === null) {
+      return;
+    }
+
+    const parsedEmployeeID = Number(newEmployeeID.trim());
+
+    if (
+      !Number.isInteger(parsedEmployeeID) ||
+      parsedEmployeeID <= 0
+    ) {
+      throw new Error("الرقم الوظيفي غير صحيح.");
+    }
+
+    // Check for duplicate employee ID
+    const duplicateEmployee = employeesCache.find(
+      item =>
+        Number(item.employeeID) === parsedEmployeeID &&
+        Number(item.employeeID) !== Number(employee.employeeID)
+    );
+
+    if (duplicateEmployee) {
+      throw new Error("الرقم الوظيفي مستخدم بالفعل لموظف آخر.");
     }
 
     const employeeName = prompt(
@@ -338,12 +369,13 @@ async function handleEditEmployee(employeeID) {
     }
 
     const employeeData = {
+      employeeID: parsedEmployeeID,
       employeeName: employeeName.trim(),
       hourlyRate: hourlyRate
     };
 
     const result = await updateEmployee(
-      employeeID,
+      employee.employeeID,
       employeeData
     );
 
