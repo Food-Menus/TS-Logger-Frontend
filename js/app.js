@@ -54,6 +54,7 @@ async function loadEmployees() {
 
   try {
     employeesCache = await getEmployees();
+    populateAttendanceEmployeeFilter();
     renderEmployees(employeesCache);
 
   } catch (error) {
