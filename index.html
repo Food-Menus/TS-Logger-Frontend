@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -5,7 +6,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>TS Logger System</title>
+  <title>TS Logger System - Employees</title>
 
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -15,6 +16,11 @@
   <main class="container">
 
     <h1>TS Logger System</h1>
+
+    <nav class="page-navigation">
+      <a href="index.html" class="active">إدارة الموظفين</a>
+      <a href="attendance.html">سجلات البصمات</a>
+    </nav>
 
     <section>
       <h2>إضافة موظف جديد</h2>
@@ -45,59 +51,6 @@
       <p id="message"></p>
     </section>
 
-
-    
-<section>
-  <h2>استيراد سجلات البصمات</h2>
-
-  <div class="form-group">
-    <label for="attendanceFile">اختيار ملف البصمات CSV</label>
-    <input
-      type="file"
-      id="attendanceFile"
-      accept=".csv,text/csv"
-    >
-  </div>
-
-  <div id="attendanceImportArea" hidden>
-
-    <h3>تصفية سجلات البصمات</h3>
-
-    <div class="form-group">
-      <label for="attendanceStartDate">من تاريخ</label>
-      <input type="date" id="attendanceStartDate">
-    </div>
-
-    <div class="form-group">
-      <label for="attendanceEndDate">إلى تاريخ</label>
-      <input type="date" id="attendanceEndDate">
-    </div>
-
-    <div class="form-group">
-      <label for="attendanceEmployeeFilter">
-        اختيار الموظفين (يمكن اختيار أكثر من موظف)
-      </label>
-
-      <select id="attendanceEmployeeFilter" multiple size="6">
-      </select>
-
-      <small>عدم اختيار أي موظف يعني عرض جميع الموظفين.</small>
-    </div>
-
-    <button type="button" id="filterAttendanceButton">
-      تطبيق التصفية
-    </button>
-
-    <div id="attendanceImportSummary"></div>
-
-    <div id="attendancePreview">
-    </div>
-
-  </div>
-</section>
-
-
-    
     <section>
       <h2>الموظفون المسجلون</h2>
 
