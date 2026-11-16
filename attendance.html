@@ -1,1 +1,138 @@
-ي
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>TS Logger System - Attendance</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .page-navigation {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .page-navigation a {
+      display: inline-block;
+      padding: 10px 18px;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: var(--text-main);
+      text-decoration: none;
+      background: rgba(15, 23, 42, 0.7);
+    }
+
+    .page-navigation a.active {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+
+    #attendancePreview {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    #attendancePreview table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 750px;
+    }
+
+    #attendancePreview th,
+    #attendancePreview td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid var(--card-border);
+    }
+
+    #attendancePreview th {
+      color: var(--color-primary);
+    }
+
+    #attendanceImportSummary {
+      margin-top: 20px;
+      color: var(--color-success);
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="container">
+
+    <h1>TS Logger System</h1>
+
+    <nav class="page-navigation">
+      <a href="index.html">إدارة الموظفين</a>
+      <a href="attendance.html" class="active">سجلات البصمات</a>
+    </nav>
+
+    <section>
+      <h2>استيراد سجلات البصمات</h2>
+
+      <div class="form-group">
+        <label for="attendanceFile">اختيار ملف البصمات CSV</label>
+
+        <input
+          type="file"
+          id="attendanceFile"
+          accept=".csv,text/csv"
+        >
+      </div>
+
+      <p id="attendanceMessage"></p>
+
+      <div id="attendanceImportArea" hidden>
+
+        <h3>تصفية سجلات البصمات</h3>
+
+        <div class="form-group">
+          <label for="attendanceStartDate">من تاريخ</label>
+          <input type="date" id="attendanceStartDate">
+        </div>
+
+        <div class="form-group">
+          <label for="attendanceEndDate">إلى تاريخ</label>
+          <input type="date" id="attendanceEndDate">
+        </div>
+
+        <div class="form-group">
+          <label for="attendanceEmployeeFilter">
+            اختيار الموظفين (يمكن اختيار أكثر من موظف)
+          </label>
+
+          <select id="attendanceEmployeeFilter" multiple size="6">
+          </select>
+
+          <small>
+            عدم اختيار أي موظف يعني عرض جميع السجلات.
+          </small>
+        </div>
+
+        <button type="button" id="filterAttendanceButton">
+          تطبيق التصفية
+        </button>
+
+        <div id="attendanceImportSummary"></div>
+
+        <div id="attendancePreview"></div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/attendance.js"></script>
+
+</body>
+</html>
