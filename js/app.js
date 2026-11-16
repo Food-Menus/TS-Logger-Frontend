@@ -417,72 +417,93 @@ async function handleDeleteEmployee(employeeID) {
 
 
 // Upload employee ID image
-async function handleImageUpload(employeeID, imageType, file) {
-  if (!file) {
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    messageElement.textContent = "حجم الصورة يجب ألا يتجاوز 5 MB.";
-    messageElement.style.color = "red";
-    return;
-  }
-
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp"
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    messageElement.textContent =
-      "نوع الصورة غير مدعوم. استخدم JPG أو PNG أو WEBP.";
-
-    messageElement.style.color = "red";
-    return;
-  }
+function updateEmployee(employeeID, employeeData) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
 
   try {
-    messageElement.textContent = "جاري رفع الصورة...";
-    messageElement.style.color = "#164e63";
+    const sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName("Employees");
 
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
+    if (!sheet) {
+      throw new Error("Employees sheet was not found.");
+    }
 
-      reader.onload = () => {
-        resolve(reader.result.split(",")[1]);
-      };
+    const oldID = Number(employeeID);
+    const newID = Number(employeeData.employeeID);
+    const name = String(employeeData.employeeName || "").trim();
+    const hourlyRate = Number(employeeData.hourlyRate);
 
-      reader.onerror = () => {
-        reject(new Error("Failed to read image."));
-      };
+    if (!Number.isInteger(oldID) || oldID <= 0) {
+      throw new Error("Invalid current employee ID.");
+    }
 
-      reader.readAsDataURL(file);
-    });
+    if (!Number.isInteger(newID) || newID <= 0) {
+      throw new Error("Invalid new employee ID.");
+    }
 
-    const imageData = {
-      fileName: file.name,
-      mimeType: file.type,
-      base64: base64
-    };
+    if (!name) {
+      throw new Error("Employee name is required.");
+    }
 
-    const result = await uploadEmployeeIDImage(
-      employeeID,
-      imageType,
-      imageData
+    if (!Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+      throw new Error("Hourly rate must be greater than zero.");
+    }
+
+    const lastRow = sheet.getLastRow();
+
+    if (lastRow < 2) {
+      throw new Error("Employee not found.");
+    }
+
+    const employeeIDs = sheet
+      .getRange(2, 1, lastRow - 1, 1)
+      .getValues()
+      .flat();
+
+    // Find the employee using the old ID
+    const employeeIndex = employeeIDs.findIndex(
+      id => Number(id) === oldID
     );
 
-    messageElement.textContent = result.message;
-    messageElement.style.color = "green";
+    if (employeeIndex === -1) {
+      throw new Error("Employee not found.");
+    }
 
-    await loadEmployees();
+    // Check whether the new ID belongs to another employee
+    const duplicateIndex = employeeIDs.findIndex(
+      (id, index) =>
+        Number(id) === newID &&
+        index !== employeeIndex
+    );
 
-  } catch (error) {
-    messageElement.textContent = error.message;
-    messageElement.style.color = "red";
+    if (duplicateIndex !== -1) {
+      throw new Error("الرقم الوظيفي مستخدم بالفعل لموظف آخر.");
+    }
+
+    const rowNumber = employeeIndex + 2;
+
+    // Update EmployeeID, EmployeeName and HourlyRate only.
+    // Keep both ID image URLs unchanged.
+    sheet.getRange(rowNumber, 1, 1, 3)
+      .setValues([[
+        newID,
+        name,
+        hourlyRate
+      ]]);
+
+    SpreadsheetApp.flush();
+
+    return {
+      success: true,
+      message: "تم تحديث بيانات الموظف بنجاح."
+    };
+
+  } finally {
+    lock.releaseLock();
   }
 }
-
 
 
 
