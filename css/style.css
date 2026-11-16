@@ -135,3 +135,79 @@ th {
     padding: 18px;
   }
 }
+/* ID image view buttons */
+.view-image-button {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  background: #164e63;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.view-image-button:hover {
+  background: #0e7490;
+}
+
+/* Image modal */
+.image-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.image-modal.active {
+  display: flex;
+}
+
+.image-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 700px;
+  max-height: 90vh;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  text-align: center;
+  overflow: auto;
+}
+
+.image-modal-content h2 {
+  margin-bottom: 15px;
+  color: #164e63;
+}
+
+.image-modal-content img {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: auto;
+  object-fit: contain;
+}
+
+.close-modal-button {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  font-size: 25px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.close-modal-button:hover {
+  background: #b91c1c;
+}
