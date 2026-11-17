@@ -539,3 +539,352 @@ loadRawAttendanceButton.addEventListener(
   "click",
   loadSavedRawAttendance
 );
+
+
+
+// ========================================
+// Attendance Review
+// ========================================
+
+const loadAttendanceReviewButton = document.getElementById(
+  "loadAttendanceReviewButton"
+);
+
+const attendanceReviewMessage = document.getElementById(
+  "attendanceReviewMessage"
+);
+
+const attendanceReviewArea = document.getElementById(
+  "attendanceReviewArea"
+);
+
+const attendanceReviewSummary = document.getElementById(
+  "attendanceReviewSummary"
+);
+
+const attendanceReviewPreview = document.getElementById(
+  "attendanceReviewPreview"
+);
+
+const saveAttendanceReviewButton = document.getElementById(
+  "saveAttendanceReviewButton"
+);
+
+let attendanceReviewRecords = [];
+
+
+function showAttendanceReviewMessage(
+  message,
+  color = "green"
+) {
+  attendanceReviewMessage.textContent = message;
+  attendanceReviewMessage.style.color = color;
+}
+
+
+// Load review records
+async function loadAttendanceReview() {
+  try {
+    loadAttendanceReviewButton.disabled = true;
+
+    loadAttendanceReviewButton.textContent =
+      "جاري تحميل سجلات المراجعة...";
+
+    showAttendanceReviewMessage(
+      "جاري تجهيز سجلات المراجعة...",
+      "#0e7490"
+    );
+
+    const result = await getAttendanceReview();
+
+    attendanceReviewRecords = result.records || [];
+
+    renderAttendanceReview(attendanceReviewRecords);
+
+    attendanceReviewArea.hidden = false;
+
+    showAttendanceReviewMessage(
+      "تم تحميل سجلات المراجعة بنجاح."
+    );
+
+  } catch (error) {
+    showAttendanceReviewMessage(
+      "تعذر تحميل سجلات المراجعة: " + error.message,
+      "red"
+    );
+
+  } finally {
+    loadAttendanceReviewButton.disabled = false;
+
+    loadAttendanceReviewButton.textContent =
+      "تحميل سجلات المراجعة";
+  }
+}
+
+
+// Render review table
+function renderAttendanceReview(records) {
+  attendanceReviewPreview.replaceChildren();
+
+  const pendingCount = records.filter(
+    record => record.reviewStatus === "PENDING"
+  ).length;
+
+  const reviewedCount = records.filter(
+    record => record.reviewStatus === "REVIEWED"
+  ).length;
+
+  const approvedCount = records.filter(
+    record => record.reviewStatus === "APPROVED"
+  ).length;
+
+  attendanceReviewSummary.textContent =
+    `الإجمالي: ${records.length} | ` +
+    `معلقة: ${pendingCount} | ` +
+    `تمت مراجعتها: ${reviewedCount} | ` +
+    `معتمدة: ${approvedCount}`;
+
+  if (records.length === 0) {
+    attendanceReviewPreview.textContent =
+      "لا توجد بصمات للمراجعة حتى الآن.";
+
+    return;
+  }
+
+  const table = document.createElement("table");
+
+  const headers = [
+    "رقم الموظف",
+    "اسم الموظف",
+    "التاريخ",
+    "الوقت",
+    "اقتراح النظام",
+    "التصنيف النهائي",
+    "حالة المراجعة",
+    "اعتماد"
+  ];
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(text => {
+    const th = document.createElement("th");
+
+    th.textContent = text;
+
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  records.forEach(record => {
+    const row = document.createElement("tr");
+
+    row.dataset.punchId = record.punchID;
+
+    const values = [
+      record.employeeID,
+      record.employeeName,
+      record.attendanceDate,
+      record.attendanceTime,
+      getAttendanceTypeLabel(record.suggestedType),
+      null,
+      getReviewStatusLabel(record.reviewStatus),
+      null
+    ];
+
+    values.forEach((value, index) => {
+      const td = document.createElement("td");
+
+      // Final classification
+      if (index === 5) {
+        const select = document.createElement("select");
+
+        select.className = "review-attendance-type";
+
+        const options = [
+          {
+            value: "",
+            label: "اختر التصنيف"
+          },
+          {
+            value: "IN",
+            label: "IN - حضور"
+          },
+          {
+            value: "OUT",
+            label: "OUT - انصراف"
+          },
+          {
+            value: "IGNORED",
+            label: "IGNORED - تجاهل"
+          }
+        ];
+
+        options.forEach(optionData => {
+          const option = document.createElement("option");
+
+          option.value = optionData.value;
+          option.textContent = optionData.label;
+
+          select.appendChild(option);
+        });
+
+        select.value = record.attendanceType || "";
+
+        if (record.reviewStatus === "APPROVED") {
+          select.disabled = true;
+        }
+
+        td.appendChild(select);
+
+      // Approval checkbox
+      } else if (index === 7) {
+        const checkbox = document.createElement("input");
+
+        checkbox.type = "checkbox";
+        checkbox.className = "review-approve-checkbox";
+
+        checkbox.title =
+          "اعتماد هذا التصنيف عند الحفظ";
+
+        checkbox.disabled =
+          record.reviewStatus === "APPROVED";
+
+        td.appendChild(checkbox);
+
+      } else {
+        td.textContent = value ?? "";
+
+        if (index === 6) {
+          const statusClass =
+            record.reviewStatus === "APPROVED"
+              ? "review-status-approved"
+              : record.reviewStatus === "REVIEWED"
+                ? "review-status-reviewed"
+                : "review-status-pending";
+
+          td.className = statusClass;
+        }
+      }
+
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+
+  attendanceReviewPreview.appendChild(table);
+}
+
+
+// Attendance type labels
+function getAttendanceTypeLabel(type) {
+  const labels = {
+    IN: "IN - حضور",
+    OUT: "OUT - انصراف",
+    IGNORED: "IGNORED - تجاهل"
+  };
+
+  return labels[type] || "لا يوجد اقتراح";
+}
+
+
+// Review status labels
+function getReviewStatusLabel(status) {
+  const labels = {
+    PENDING: "معلقة",
+    REVIEWED: "تمت المراجعة",
+    APPROVED: "معتمدة"
+  };
+
+  return labels[status] || status || "معلقة";
+}
+
+
+// Save review changes
+async function submitAttendanceReview() {
+  const rows = Array.from(
+    attendanceReviewPreview.querySelectorAll("tbody tr")
+  );
+
+  const updates = [];
+
+  rows.forEach(row => {
+    const select = row.querySelector(
+      ".review-attendance-type"
+    );
+
+    const approveCheckbox = row.querySelector(
+      ".review-approve-checkbox"
+    );
+
+    if (!select || select.disabled || !select.value) {
+      return;
+    }
+
+    updates.push({
+      punchID: row.dataset.punchId,
+
+      attendanceType: select.value,
+
+      reviewStatus: approveCheckbox.checked
+        ? "APPROVED"
+        : "REVIEWED"
+    });
+  });
+
+  if (updates.length === 0) {
+    showAttendanceReviewMessage(
+      "اختر تصنيفًا نهائيًا لبصمة واحدة على الأقل قبل الحفظ.",
+      "#d97706"
+    );
+
+    return;
+  }
+
+  try {
+    saveAttendanceReviewButton.disabled = true;
+
+    saveAttendanceReviewButton.textContent =
+      "جاري حفظ المراجعة...";
+
+    const result = await saveAttendanceReview(updates);
+
+    showAttendanceReviewMessage(
+      `تم حفظ ${result.updatedCount} سجل مراجعة بنجاح.`,
+      "green"
+    );
+
+    await loadAttendanceReview();
+
+  } catch (error) {
+    showAttendanceReviewMessage(
+      "فشل حفظ المراجعة: " + error.message,
+      "red"
+    );
+
+  } finally {
+    saveAttendanceReviewButton.disabled = false;
+
+    saveAttendanceReviewButton.textContent =
+      "حفظ التصنيفات والمراجعة";
+  }
+}
+
+
+// Event listeners
+loadAttendanceReviewButton.addEventListener(
+  "click",
+  loadAttendanceReview
+);
+
+saveAttendanceReviewButton.addEventListener(
+  "click",
+  submitAttendanceReview
+);
