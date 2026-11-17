@@ -445,52 +445,34 @@
 
   <!-- Section Switching -->
 
-  <script>
-    const attendanceSectionSelector =
-      document.getElementById("attendanceSectionSelector");
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const selector = document.getElementById("attendanceSectionSelector");
 
-    const attendanceSections = {
-      import: document.getElementById("attendanceImportSection"),
-      raw: document.getElementById("rawAttendanceSection"),
-      review: document.getElementById("attendanceReviewSection")
+    const sections = {
+        import: document.getElementById("attendanceImportSection"),
+        raw: document.getElementById("rawAttendanceSection"),
+        review: document.getElementById("attendanceReviewSection")
     };
 
-    attendanceSectionSelector.addEventListener("change", function () {
+    function switchSection() {
+        const selectedSection = selector.value;
 
-      const selectedSection = this.value;
+        Object.entries(sections).forEach(([key, section]) => {
+            if (section) {
+                section.hidden = key !== selectedSection;
+            }
+        });
+    }
 
-      Object.entries(attendanceSections).forEach(([key, section]) => {
-
-        section.hidden = key !== selectedSection;
-
-      });
-
-    });
-
-
-    // Show or hide employee search input
-
-    const reviewEmployeeMode =
-      document.getElementById("reviewEmployeeMode");
-
-    const reviewEmployeeSelectGroup =
-      document.getElementById("reviewEmployeeSelectGroup");
-
-    reviewEmployeeMode.addEventListener("change", function () {
-
-      const isSingleEmployee = this.value === "single";
-
-      reviewEmployeeSelectGroup.hidden = !isSingleEmployee;
-
-      if (!isSingleEmployee) {
-
-        document.getElementById("reviewEmployeeFilter").value = "";
-
-      }
-
-    });
-
-  </script>
+    if (selector) {
+        selector.addEventListener("change", switchSection);
+        switchSection();
+    } else {
+        console.error("attendanceSectionSelector was not found.");
+    }
+});
+</script>
 
 </body>
 </html>
