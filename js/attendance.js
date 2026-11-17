@@ -404,3 +404,138 @@ function renderAttendancePreview(records) {
 
 // Initial load
 loadAttendanceEmployees();
+
+
+
+// Raw attendance elements
+const loadRawAttendanceButton = document.getElementById(
+  "loadRawAttendanceButton"
+);
+
+const rawAttendanceMessage = document.getElementById(
+  "rawAttendanceMessage"
+);
+
+const rawAttendanceArea = document.getElementById(
+  "rawAttendanceArea"
+);
+
+const rawAttendanceSummary = document.getElementById(
+  "rawAttendanceSummary"
+);
+
+const rawAttendancePreview = document.getElementById(
+  "rawAttendancePreview"
+);
+
+
+// Load saved raw attendance
+async function loadSavedRawAttendance() {
+  try {
+    loadRawAttendanceButton.disabled = true;
+    loadRawAttendanceButton.textContent = "جاري تحميل البصمات...";
+
+    rawAttendanceMessage.textContent =
+      "جاري الاتصال بقاعدة البيانات...";
+
+    rawAttendanceMessage.style.color = "#00f2fe";
+
+    const result = await getRawAttendance();
+
+    renderRawAttendance(result.records);
+
+    rawAttendanceArea.hidden = false;
+
+    rawAttendanceMessage.textContent =
+      "تم تحميل البصمات بنجاح.";
+
+    rawAttendanceMessage.style.color = "green";
+
+  } catch (error) {
+    rawAttendanceMessage.textContent =
+      "تعذر تحميل البصمات: " + error.message;
+
+    rawAttendanceMessage.style.color = "red";
+
+  } finally {
+    loadRawAttendanceButton.disabled = false;
+    loadRawAttendanceButton.textContent =
+      "تحميل البصمات المسجلة";
+  }
+}
+
+
+// Render saved raw attendance
+function renderRawAttendance(records) {
+  rawAttendancePreview.replaceChildren();
+
+  rawAttendanceSummary.textContent =
+    `إجمالي البصمات المسجلة: ${records.length}`;
+
+  if (records.length === 0) {
+    rawAttendancePreview.textContent =
+      "لا توجد بصمات مسجلة في قاعدة البيانات.";
+
+    return;
+  }
+
+  const table = document.createElement("table");
+
+  const headers = [
+    "رقم الموظف",
+    "الاسم الأصلي",
+    "التاريخ",
+    "الوقت",
+    "نوع الحركة",
+    "IP الجهاز",
+    "تاريخ الاستيراد"
+  ];
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  headers.forEach(header => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  records.forEach(record => {
+    const row = document.createElement("tr");
+
+    const values = [
+      record.employeeID,
+      record.originalEmployeeName,
+      record.attendanceDate,
+      record.attendanceTime,
+      record.originalAction,
+      record.deviceIP,
+      record.importedAt
+        ? new Date(record.importedAt).toLocaleString("en-GB")
+        : ""
+    ];
+
+    values.forEach(value => {
+      const td = document.createElement("td");
+      td.textContent = value ?? "";
+      row.appendChild(td);
+    });
+
+    tbody.appendChild(row);
+  });
+
+  table.appendChild(tbody);
+  rawAttendancePreview.appendChild(table);
+}
+
+
+// Load button event
+loadRawAttendanceButton.addEventListener(
+  "click",
+  loadSavedRawAttendance
+);
