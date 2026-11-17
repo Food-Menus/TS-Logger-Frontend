@@ -399,7 +399,7 @@ function renderAttendancePreview(records) {
 
   table.appendChild(tbody);
   attendancePreview.appendChild(table);
-});
+}
 
 
 // Initial load
