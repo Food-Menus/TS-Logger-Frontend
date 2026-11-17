@@ -11,6 +11,10 @@
   <link rel="stylesheet" href="css/style.css">
 
   <style>
+    [hidden] {
+      display: none !important;
+    }
+
     .page-navigation {
       display: flex;
       gap: 10px;
@@ -32,6 +36,35 @@
       border-color: var(--color-primary);
       color: var(--color-primary);
     }
+
+    .attendance-section {
+      margin-top: 30px;
+    }
+
+    /* Section selector */
+
+    .section-selector {
+      margin-top: 25px;
+      padding: 20px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .section-selector label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+
+    .section-selector select {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    /* Import and raw attendance tables */
 
     #attendancePreview,
     #rawAttendancePreview {
@@ -68,50 +101,51 @@
       font-weight: bold;
     }
 
-    .attendance-section {
-      margin-top: 30px;
-    }
     /* Attendance review */
 
-#attendanceReviewPreview {
-  width: 100%;
-  overflow-x: auto;
-  margin-top: 20px;
-}
+    #attendanceReviewPreview {
+      width: 100%;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
 
-#attendanceReviewPreview table {
-  width: 100%;
-  min-width: 1100px;
-  border-collapse: collapse;
-}
+    #attendanceReviewPreview table {
+      width: 100%;
+      min-width: 1100px;
+      border-collapse: collapse;
+    }
 
-#attendanceReviewPreview th,
-#attendanceReviewPreview td {
-  padding: 10px;
-  text-align: center;
-  border: 1px solid var(--card-border, #ddd);
-  white-space: nowrap;
-}
+    #attendanceReviewPreview th,
+    #attendanceReviewPreview td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid var(--card-border, #ddd);
+      white-space: nowrap;
+    }
 
-#attendanceReviewPreview select {
-  min-width: 125px;
-  padding: 8px;
-}
+    #attendanceReviewPreview select {
+      min-width: 125px;
+      padding: 8px;
+    }
 
-.review-status-pending {
-  color: #d97706;
-  font-weight: bold;
-}
+    .review-status-pending {
+      color: #d97706;
+      font-weight: bold;
+    }
 
-.review-status-reviewed {
-  color: #0284c7;
-  font-weight: bold;
-}
+    .review-status-reviewed {
+      color: #0284c7;
+      font-weight: bold;
+    }
 
-.review-status-approved {
-  color: #16a34a;
-  font-weight: bold;
-}
+    .review-status-approved {
+      color: #16a34a;
+      font-weight: bold;
+    }
+
+    .filter-group {
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 
@@ -126,19 +160,52 @@
       <a href="attendance.html" class="active">سجلات البصمات</a>
     </nav>
 
-    <!-- Import Attendance -->
-    <section>
+
+    <!-- Section Selector -->
+
+    <section class="section-selector">
+
+      <label for="attendanceSectionSelector">
+        اختر القسم المطلوب عرضه
+      </label>
+
+      <select id="attendanceSectionSelector">
+
+        <option value="import">
+          استيراد سجلات البصمات
+        </option>
+
+        <option value="raw">
+          البصمات المسجلة في قاعدة البيانات
+        </option>
+
+        <option value="review">
+          مراجعة وتصنيف البصمات
+        </option>
+
+      </select>
+
+    </section>
+
+
+    <!-- 1. Import Attendance -->
+
+    <section id="attendanceImportSection" class="attendance-section">
 
       <h2>استيراد سجلات البصمات</h2>
 
       <div class="form-group">
-        <label for="attendanceFile">اختيار ملف البصمات CSV</label>
+
+        <label for="attendanceFile">
+          اختيار ملف البصمات CSV
+        </label>
 
         <input
           type="file"
           id="attendanceFile"
           accept=".csv,text/csv"
         >
+
       </div>
 
       <p id="attendanceMessage"></p>
@@ -148,16 +215,27 @@
         <h3>تصفية سجلات البصمات</h3>
 
         <div class="form-group">
-          <label for="attendanceStartDate">من تاريخ</label>
+
+          <label for="attendanceStartDate">
+            من تاريخ
+          </label>
+
           <input type="date" id="attendanceStartDate">
+
         </div>
 
         <div class="form-group">
-          <label for="attendanceEndDate">إلى تاريخ</label>
+
+          <label for="attendanceEndDate">
+            إلى تاريخ
+          </label>
+
           <input type="date" id="attendanceEndDate">
+
         </div>
 
         <div class="form-group">
+
           <label for="attendanceEmployeeFilter">
             اختيار الموظفين (يمكن اختيار أكثر من موظف)
           </label>
@@ -168,6 +246,7 @@
           <small>
             عدم اختيار أي موظف يعني عرض جميع السجلات.
           </small>
+
         </div>
 
         <button type="button" id="filterAttendanceButton">
@@ -187,8 +266,13 @@
     </section>
 
 
-    <!-- Saved Raw Attendance -->
-    <section class="attendance-section">
+    <!-- 2. Saved Raw Attendance -->
+
+    <section
+      id="rawAttendanceSection"
+      class="attendance-section"
+      hidden
+    >
 
       <h2>البصمات المسجلة في قاعدة البيانات</h2>
 
@@ -211,70 +295,150 @@
       </div>
 
     </section>
-<!-- Attendance Review -->
-<section class="attendance-section">
 
-  <h2>مراجعة وتصنيف البصمات</h2>
 
-  <p>
-    اقتراح النظام للمساعدة فقط. لا يتم اعتماد أي بصمة إلا بعد اختيار التصنيف وحفظه.
-  </p>
+    <!-- 3. Attendance Review -->
 
-  <button type="button" id="loadAttendanceReviewButton">
-    تحميل سجلات المراجعة
-  </button>
+    <section
+      id="attendanceReviewSection"
+      class="attendance-section"
+      hidden
+    >
 
-  <p id="attendanceReviewMessage"></p>
+      <h2>مراجعة وتصنيف البصمات</h2>
 
-<div id="attendanceReviewArea" hidden>
+      <p>
+        اقتراح النظام للمساعدة فقط.
+        لا يتم اعتماد أي بصمة إلا بعد اختيار التصنيف ومراجعتها.
+      </p>
 
-  <h3>تصفية سجلات المراجعة</h3>
+      <button type="button" id="loadAttendanceReviewButton">
+        تحميل سجلات المراجعة
+      </button>
 
-  <div class="form-group">
-    <label for="reviewEmployeeMode">نطاق عرض الموظفين</label>
+      <p id="attendanceReviewMessage"></p>
 
-    <select id="reviewEmployeeMode">
-      <option value="all">كل الموظفين</option>
-      <option value="single">موظف محدد</option>
-    </select>
-  </div>
+      <div id="attendanceReviewArea" hidden>
 
-  <div class="form-group" id="reviewEmployeeSelectGroup" hidden>
-    <label for="reviewEmployeeFilter">اختيار الموظف</label>
+        <h3>تصفية سجلات المراجعة</h3>
 
-    <select id="reviewEmployeeFilter">
-      <option value="">اختر الموظف</option>
-    </select>
-  </div>
+        <div class="filter-group">
 
-  <div class="form-group">
-    <label for="reviewStartDate">من تاريخ</label>
-    <input type="date" id="reviewStartDate">
-  </div>
+          <label for="reviewEmployeeMode">
+            نطاق عرض الموظفين
+          </label>
 
-  <div class="form-group">
-    <label for="reviewEndDate">إلى تاريخ</label>
-    <input type="date" id="reviewEndDate">
-  </div>
+          <select id="reviewEmployeeMode">
 
-  <button type="button" id="applyReviewFilterButton">
-    تطبيق التصفية
-  </button>
+            <option value="all">
+              كل الموظفين
+            </option>
 
-  <button type="button" id="resetReviewFilterButton">
-    عرض جميع السجلات
-  </button>
+            <option value="single">
+              موظف محدد
+            </option>
 
-  <div id="attendanceReviewSummary"></div>
+          </select>
 
-  </div>
+        </div>
 
-</section>
+        <div
+          class="filter-group"
+          id="reviewEmployeeSelectGroup"
+          hidden
+        >
+
+          <label for="reviewEmployeeFilter">
+            اختيار الموظف
+          </label>
+
+          <select id="reviewEmployeeFilter">
+
+            <option value="">
+              اختر الموظف
+            </option>
+
+          </select>
+
+        </div>
+
+        <div class="filter-group">
+
+          <label for="reviewStartDate">
+            من تاريخ
+          </label>
+
+          <input type="date" id="reviewStartDate">
+
+        </div>
+
+        <div class="filter-group">
+
+          <label for="reviewEndDate">
+            إلى تاريخ
+          </label>
+
+          <input type="date" id="reviewEndDate">
+
+        </div>
+
+        <button type="button" id="applyReviewFilterButton">
+          تطبيق التصفية
+        </button>
+
+        <button type="button" id="resetReviewFilterButton">
+          عرض جميع السجلات
+        </button>
+
+        <div id="attendanceReviewSummary"></div>
+
+        <p>
+          اختر التصنيف النهائي لكل بصمة:
+          IN للحضور، OUT للانصراف، IGNORED لتجاهل البصمة.
+          فعل مربع الاعتماد فقط عندما تكون متأكدًا من التصنيف.
+          السجلات التي لا يتم اختيار تصنيف لها ستظل معلقة.
+        </p>
+
+        <button type="button" id="saveAttendanceReviewButton">
+          حفظ التصنيفات والمراجعة
+        </button>
+
+        <div id="attendanceReviewPreview"></div>
+
+      </div>
+
+    </section>
+
   </main>
+
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/attendance.js"></script>
+
+
+  <!-- Section Switching -->
+
+  <script>
+    const attendanceSectionSelector =
+      document.getElementById("attendanceSectionSelector");
+
+    const attendanceSections = {
+      import: document.getElementById("attendanceImportSection"),
+      raw: document.getElementById("rawAttendanceSection"),
+      review: document.getElementById("attendanceReviewSection")
+    };
+
+    attendanceSectionSelector.addEventListener("change", function () {
+
+      const selectedSection = this.value;
+
+      Object.entries(attendanceSections).forEach(([key, section]) => {
+        section.hidden = key !== selectedSection;
+      });
+
+    });
+  </script>
 
 </body>
 </html>
