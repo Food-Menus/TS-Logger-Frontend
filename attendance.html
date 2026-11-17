@@ -103,6 +103,18 @@
 
     /* Attendance review */
 
+    .filter-group {
+      margin-bottom: 15px;
+    }
+
+    .filter-group input,
+    .filter-group select {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
     #attendanceReviewPreview {
       width: 100%;
       overflow-x: auto;
@@ -141,10 +153,6 @@
     .review-status-approved {
       color: #16a34a;
       font-weight: bold;
-    }
-
-    .filter-group {
-      margin-bottom: 15px;
     }
   </style>
 </head>
@@ -322,6 +330,8 @@
 
         <h3>تصفية سجلات المراجعة</h3>
 
+        <!-- Employee Mode -->
+
         <div class="filter-group">
 
           <label for="reviewEmployeeMode">
@@ -342,6 +352,9 @@
 
         </div>
 
+
+        <!-- Employee Search -->
+
         <div
           class="filter-group"
           id="reviewEmployeeSelectGroup"
@@ -349,18 +362,20 @@
         >
 
           <label for="reviewEmployeeFilter">
-            اختيار الموظف
+            اكتب اسم الموظف أو رقمه
           </label>
 
-          <select id="reviewEmployeeFilter">
-
-            <option value="">
-              اختر الموظف
-            </option>
-
-          </select>
+          <input
+            type="text"
+            id="reviewEmployeeFilter"
+            placeholder="اكتب اسم الموظف أو رقم الموظف"
+            autocomplete="off"
+          >
 
         </div>
+
+
+        <!-- Date Filters -->
 
         <div class="filter-group">
 
@@ -382,6 +397,9 @@
 
         </div>
 
+
+        <!-- Filter Buttons -->
+
         <button type="button" id="applyReviewFilterButton">
           تطبيق التصفية
         </button>
@@ -389,6 +407,9 @@
         <button type="button" id="resetReviewFilterButton">
           عرض جميع السجلات
         </button>
+
+
+        <!-- Review Summary -->
 
         <div id="attendanceReviewSummary"></div>
 
@@ -398,6 +419,9 @@
           فعل مربع الاعتماد فقط عندما تكون متأكدًا من التصنيف.
           السجلات التي لا يتم اختيار تصنيف لها ستظل معلقة.
         </p>
+
+
+        <!-- Save Review -->
 
         <button type="button" id="saveAttendanceReviewButton">
           حفظ التصنيفات والمراجعة
@@ -411,6 +435,8 @@
 
   </main>
 
+
+  <!-- JavaScript Files -->
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
@@ -434,10 +460,36 @@
       const selectedSection = this.value;
 
       Object.entries(attendanceSections).forEach(([key, section]) => {
+
         section.hidden = key !== selectedSection;
+
       });
 
     });
+
+
+    // Show or hide employee search input
+
+    const reviewEmployeeMode =
+      document.getElementById("reviewEmployeeMode");
+
+    const reviewEmployeeSelectGroup =
+      document.getElementById("reviewEmployeeSelectGroup");
+
+    reviewEmployeeMode.addEventListener("change", function () {
+
+      const isSingleEmployee = this.value === "single";
+
+      reviewEmployeeSelectGroup.hidden = !isSingleEmployee;
+
+      if (!isSingleEmployee) {
+
+        document.getElementById("reviewEmployeeFilter").value = "";
+
+      }
+
+    });
+
   </script>
 
 </body>
