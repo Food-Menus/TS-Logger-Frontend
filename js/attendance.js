@@ -5,12 +5,14 @@ const attendanceStartDate = document.getElementById("attendanceStartDate");
 const attendanceEndDate = document.getElementById("attendanceEndDate");
 const attendanceEmployeeFilter = document.getElementById("attendanceEmployeeFilter");
 const filterAttendanceButton = document.getElementById("filterAttendanceButton");
+const saveAttendanceImportButton = document.getElementById("saveAttendanceImportButton");
 const attendanceImportSummary = document.getElementById("attendanceImportSummary");
 const attendancePreview = document.getElementById("attendancePreview");
 const attendanceMessage = document.getElementById("attendanceMessage");
 
 let employeesCache = [];
 let attendanceRecords = [];
+let currentImportSaved = false;
 
 
 // Display attendance messages
@@ -124,6 +126,13 @@ attendanceFileInput.addEventListener("change", async () => {
     return;
   }
 
+  currentImportSaved = false;
+  saveAttendanceImportButton.disabled = false;
+  saveAttendanceImportButton.textContent =
+    "حفظ البصمات في قاعدة البيانات";
+
+  attendanceRecords = [];
+
   try {
     if (employeesCache.length === 0) {
       await loadAttendanceEmployees();
@@ -140,6 +149,7 @@ attendanceFileInput.addEventListener("change", async () => {
 
     const requiredHeaders = [
       "رقم الموظف",
+      "اسم الموظف",
       "التاريخ",
       "توقيت البصمة",
       "نوع الحركة",
@@ -160,40 +170,44 @@ attendanceFileInput.addEventListener("change", async () => {
 
     attendanceRecords = rows.slice(1).map(row => {
       const employeeID =
-        (row[columnIndexes["رقم الموظف"]] || "").trim();
+        row[columnIndexes["رقم الموظف"]] || "";
 
-      // Employee name from the CSV is intentionally ignored.
+      const originalEmployeeName =
+        row[columnIndexes["اسم الموظف"]] || "";
+
       const employee = employeesCache.find(
         item =>
-          String(item.employeeID).trim() === employeeID
+          String(item.employeeID).trim() === employeeID.trim()
       );
 
       return {
-        employeeID,
+        employeeID: employeeID,
 
         employeeName: employee
           ? employee.employeeName
           : "غير مسجل",
 
+        originalEmployeeName: originalEmployeeName,
+
         attendanceDate:
-          (row[columnIndexes["التاريخ"]] || "").trim(),
+          row[columnIndexes["التاريخ"]] || "",
 
         attendanceTime:
-          (row[columnIndexes["توقيت البصمة"]] || "").trim(),
+          row[columnIndexes["توقيت البصمة"]] || "",
 
         originalAction:
-          (row[columnIndexes["نوع الحركة"]] || "").trim(),
+          row[columnIndexes["نوع الحركة"]] || "",
 
         deviceIP:
-          (row[columnIndexes["IP الجهاز"]] || "").trim()
+          row[columnIndexes["IP الجهاز"]] || ""
       };
     });
 
     attendanceImportArea.hidden = false;
 
     const dates = attendanceRecords
-      .map(record => record.attendanceDate)
-      .filter(Boolean)
+      .map(record => record.attendanceDate.trim())
+      .filter(date => /^\d{4}-\d{2}-\d{2}$/.test(date))
       .sort();
 
     if (dates.length > 0) {
@@ -203,13 +217,84 @@ attendanceFileInput.addEventListener("change", async () => {
 
     renderAttendancePreview(attendanceRecords);
 
-    showAttendanceMessage("تمت قراءة ملف البصمات بنجاح.");
+    showAttendanceMessage(
+      `تمت قراءة ${attendanceRecords.length} سجل بنجاح. يمكنك مراجعتها ثم حفظها.`
+    );
 
   } catch (error) {
     attendanceRecords = [];
     attendanceImportArea.hidden = true;
 
     showAttendanceMessage(error.message, "red");
+  }
+});
+
+
+// Save original attendance records
+saveAttendanceImportButton.addEventListener("click", async () => {
+  if (attendanceRecords.length === 0) {
+    showAttendanceMessage("لا توجد سجلات للحفظ.", "red");
+    return;
+  }
+
+  if (currentImportSaved) {
+    showAttendanceMessage(
+      "تم حفظ هذه البيانات بالفعل.",
+      "red"
+    );
+    return;
+  }
+
+  try {
+    saveAttendanceImportButton.disabled = true;
+    saveAttendanceImportButton.textContent = "جاري الحفظ...";
+
+    showAttendanceMessage(
+      "جاري حفظ البصمات الأصلية في قاعدة البيانات...",
+      "#00f2fe"
+    );
+
+    const records = attendanceRecords.map(record => ({
+      employeeID: record.employeeID,
+      originalEmployeeName: record.originalEmployeeName,
+      attendanceDate: record.attendanceDate,
+      attendanceTime: record.attendanceTime,
+      originalAction: record.originalAction,
+      deviceIP: record.deviceIP
+    }));
+
+    const result = await importRawAttendance(records);
+
+    currentImportSaved = true;
+
+    if (result.duplicate) {
+      saveAttendanceImportButton.textContent =
+        "تم استيراد هذه البيانات مسبقًا";
+
+      showAttendanceMessage(
+        "هذه البيانات موجودة بالفعل في قاعدة البيانات. لم تتم إضافة سجلات مكررة.",
+        "#f59e0b"
+      );
+
+      return;
+    }
+
+    saveAttendanceImportButton.textContent = "تم الحفظ بنجاح";
+
+    showAttendanceMessage(
+      `تم حفظ ${result.importedCount} سجل بنجاح في RawAttendance.`,
+      "green"
+    );
+
+  } catch (error) {
+    saveAttendanceImportButton.disabled = false;
+    saveAttendanceImportButton.textContent =
+      "إعادة محاولة الحفظ";
+
+    showAttendanceMessage(
+      "فشل حفظ البصمات: " + error.message,
+      "red"
+    );
   }
 });
 
@@ -240,7 +325,7 @@ filterAttendanceButton.addEventListener("click", () => {
 
     const matchesEmployee =
       selectedEmployees.length === 0 ||
-      selectedEmployees.includes(record.employeeID);
+      selectedEmployees.includes(record.employeeID.trim());
 
     return (
       matchesStartDate &&
@@ -314,7 +399,7 @@ function renderAttendancePreview(records) {
 
   table.appendChild(tbody);
   attendancePreview.appendChild(table);
-}
+});
 
 
 // Initial load
