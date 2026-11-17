@@ -406,6 +406,10 @@ function renderAttendancePreview(records) {
 loadAttendanceEmployees();
 
 
+// ========================================
+// Raw Attendance
+// ========================================
+
 
 // Raw attendance elements
 const loadRawAttendanceButton = document.getElementById(
@@ -541,10 +545,10 @@ loadRawAttendanceButton.addEventListener(
 );
 
 
-
 // ========================================
 // Attendance Review
 // ========================================
+
 
 const loadAttendanceReviewButton = document.getElementById(
   "loadAttendanceReviewButton"
@@ -570,16 +574,148 @@ const saveAttendanceReviewButton = document.getElementById(
   "saveAttendanceReviewButton"
 );
 
+
+// Review filter elements
+const reviewEmployeeMode = document.getElementById(
+  "reviewEmployeeMode"
+);
+
+const reviewEmployeeSelectGroup = document.getElementById(
+  "reviewEmployeeSelectGroup"
+);
+
+const reviewEmployeeFilter = document.getElementById(
+  "reviewEmployeeFilter"
+);
+
+const reviewStartDate = document.getElementById(
+  "reviewStartDate"
+);
+
+const reviewEndDate = document.getElementById(
+  "reviewEndDate"
+);
+
+const applyReviewFilterButton = document.getElementById(
+  "applyReviewFilterButton"
+);
+
+const resetReviewFilterButton = document.getElementById(
+  "resetReviewFilterButton"
+);
+
+
 let attendanceReviewRecords = [];
 
 
-function showAttendanceReviewMessage(
-  message,
-  color = "green"
-) {
+function showAttendanceReviewMessage(message, color = "green") {
   attendanceReviewMessage.textContent = message;
   attendanceReviewMessage.style.color = color;
 }
+
+
+// Show or hide employee search
+function updateReviewEmployeeFilterVisibility() {
+  const isSingleEmployee = reviewEmployeeMode.value === "single";
+
+  reviewEmployeeSelectGroup.hidden = !isSingleEmployee;
+
+  if (!isSingleEmployee) {
+    reviewEmployeeFilter.value = "";
+  }
+}
+
+
+// Employee mode change
+reviewEmployeeMode.addEventListener(
+  "change",
+  updateReviewEmployeeFilterVisibility
+);
+
+
+// Filter review records and render the result
+function renderFilteredAttendanceReview() {
+  const mode = reviewEmployeeMode.value;
+  const employeeSearch = reviewEmployeeFilter.value.trim().toLowerCase();
+
+  const startDate = reviewStartDate.value;
+  const endDate = reviewEndDate.value;
+
+  if (startDate && endDate && startDate > endDate) {
+    showAttendanceReviewMessage(
+      "تاريخ البداية يجب ألا يكون بعد تاريخ النهاية.",
+      "red"
+    );
+    return;
+  }
+
+  if (mode === "single" && !employeeSearch) {
+    showAttendanceReviewMessage(
+      "اكتب اسم الموظف أو رقمه أولاً.",
+      "#d97706"
+    );
+
+    reviewEmployeeFilter.focus();
+    return;
+  }
+
+  const filteredRecords = attendanceReviewRecords.filter(record => {
+    const employeeID = String(record.employeeID || "")
+      .trim()
+      .toLowerCase();
+
+    const employeeName = String(record.employeeName || "")
+      .trim()
+      .toLowerCase();
+
+    const matchesEmployee =
+      mode === "all" ||
+      employeeID.includes(employeeSearch) ||
+      employeeName.includes(employeeSearch);
+
+    const attendanceDate = String(record.attendanceDate || "").trim();
+
+    const matchesStartDate =
+      !startDate || attendanceDate >= startDate;
+
+    const matchesEndDate =
+      !endDate || attendanceDate <= endDate;
+
+    return (
+      matchesEmployee &&
+      matchesStartDate &&
+      matchesEndDate
+    );
+  });
+
+  renderAttendanceReview(filteredRecords);
+
+  showAttendanceReviewMessage(
+    `تم عرض ${filteredRecords.length} سجل من إجمالي ${attendanceReviewRecords.length}.`
+  );
+}
+
+
+// Apply filters
+applyReviewFilterButton.addEventListener(
+  "click",
+  renderFilteredAttendanceReview
+);
+
+
+// Reset filters
+resetReviewFilterButton.addEventListener("click", () => {
+  reviewEmployeeMode.value = "all";
+  reviewEmployeeFilter.value = "";
+  reviewStartDate.value = "";
+  reviewEndDate.value = "";
+
+  updateReviewEmployeeFilterVisibility();
+
+  renderAttendanceReview(attendanceReviewRecords);
+
+  showAttendanceReviewMessage("تم عرض جميع سجلات المراجعة.");
+});
 
 
 // Load review records
@@ -599,12 +735,14 @@ async function loadAttendanceReview() {
 
     attendanceReviewRecords = result.records || [];
 
-    renderAttendanceReview(attendanceReviewRecords);
-
     attendanceReviewArea.hidden = false;
 
+    updateReviewEmployeeFilterVisibility();
+
+    renderFilteredAttendanceReview();
+
     showAttendanceReviewMessage(
-      "تم تحميل سجلات المراجعة بنجاح."
+      `تم تحميل ${attendanceReviewRecords.length} سجل مراجعة.`
     );
 
   } catch (error) {
@@ -639,14 +777,14 @@ function renderAttendanceReview(records) {
   ).length;
 
   attendanceReviewSummary.textContent =
-    `الإجمالي: ${records.length} | ` +
+    `المعروض: ${records.length} من ${attendanceReviewRecords.length} | ` +
     `معلقة: ${pendingCount} | ` +
     `تمت مراجعتها: ${reviewedCount} | ` +
     `معتمدة: ${approvedCount}`;
 
   if (records.length === 0) {
     attendanceReviewPreview.textContent =
-      "لا توجد بصمات للمراجعة حتى الآن.";
+      "لا توجد سجلات مطابقة للفلاتر المحددة.";
 
     return;
   }
@@ -807,7 +945,7 @@ function getReviewStatusLabel(status) {
 }
 
 
-// Save review changes
+// Save review changes for visible records only
 async function submitAttendanceReview() {
   const rows = Array.from(
     attendanceReviewPreview.querySelectorAll("tbody tr")
@@ -861,6 +999,7 @@ async function submitAttendanceReview() {
       "green"
     );
 
+    // Reload records while keeping the current filters
     await loadAttendanceReview();
 
   } catch (error) {
