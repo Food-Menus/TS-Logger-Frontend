@@ -111,3 +111,33 @@ async function uploadEmployeeIDImage(employeeID, imageType, imageData) {
 
   return result;
 }
+
+
+
+
+
+
+async function importRawAttendance(records) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "importRawAttendance",
+      records: records
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to import attendance records."
+    );
+  }
+
+  return result;
+}
+
