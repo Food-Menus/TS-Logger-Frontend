@@ -226,21 +226,46 @@
 
   <p id="attendanceReviewMessage"></p>
 
-  <div id="attendanceReviewArea" hidden>
+<div id="attendanceReviewArea" hidden>
 
-    <div id="attendanceReviewSummary"></div>
+  <h3>تصفية سجلات المراجعة</h3>
 
-    <p>
-      اختر التصنيف النهائي لكل بصمة.
-      فعل مربع الاعتماد فقط عندما تكون متأكدًا من التصنيف.
-      السجلات التي لا يتم اختيار تصنيف لها ستظل معلقة.
-    </p>
+  <div class="form-group">
+    <label for="reviewEmployeeMode">نطاق عرض الموظفين</label>
 
-    <button type="button" id="saveAttendanceReviewButton">
-      حفظ التصنيفات والمراجعة
-    </button>
+    <select id="reviewEmployeeMode">
+      <option value="all">كل الموظفين</option>
+      <option value="single">موظف محدد</option>
+    </select>
+  </div>
 
-    <div id="attendanceReviewPreview"></div>
+  <div class="form-group" id="reviewEmployeeSelectGroup" hidden>
+    <label for="reviewEmployeeFilter">اختيار الموظف</label>
+
+    <select id="reviewEmployeeFilter">
+      <option value="">اختر الموظف</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="reviewStartDate">من تاريخ</label>
+    <input type="date" id="reviewStartDate">
+  </div>
+
+  <div class="form-group">
+    <label for="reviewEndDate">إلى تاريخ</label>
+    <input type="date" id="reviewEndDate">
+  </div>
+
+  <button type="button" id="applyReviewFilterButton">
+    تطبيق التصفية
+  </button>
+
+  <button type="button" id="resetReviewFilterButton">
+    عرض جميع السجلات
+  </button>
+
+  <div id="attendanceReviewSummary"></div>
 
   </div>
 
