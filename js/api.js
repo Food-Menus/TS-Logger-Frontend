@@ -141,3 +141,25 @@ async function importRawAttendance(records) {
   return result;
 }
 
+
+
+
+async function getRawAttendance() {
+  const response = await fetch(
+    `${API_URL}?action=getRawAttendance`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to load attendance records."
+    );
+  }
+
+  return result;
+}
