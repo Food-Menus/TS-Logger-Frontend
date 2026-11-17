@@ -211,7 +211,40 @@
       </div>
 
     </section>
+<!-- Attendance Review -->
+<section class="attendance-section">
 
+  <h2>مراجعة وتصنيف البصمات</h2>
+
+  <p>
+    اقتراح النظام للمساعدة فقط. لا يتم اعتماد أي بصمة إلا بعد اختيار التصنيف وحفظه.
+  </p>
+
+  <button type="button" id="loadAttendanceReviewButton">
+    تحميل سجلات المراجعة
+  </button>
+
+  <p id="attendanceReviewMessage"></p>
+
+  <div id="attendanceReviewArea" hidden>
+
+    <div id="attendanceReviewSummary"></div>
+
+    <p>
+      اختر التصنيف النهائي لكل بصمة.
+      فعل مربع الاعتماد فقط عندما تكون متأكدًا من التصنيف.
+      السجلات التي لا يتم اختيار تصنيف لها ستظل معلقة.
+    </p>
+
+    <button type="button" id="saveAttendanceReviewButton">
+      حفظ التصنيفات والمراجعة
+    </button>
+
+    <div id="attendanceReviewPreview"></div>
+
+  </div>
+
+</section>
   </main>
 
   <script src="js/config.js"></script>
