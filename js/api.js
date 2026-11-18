@@ -212,3 +212,50 @@ async function saveAttendanceReview(updates) {
 
   return result;
 }
+
+
+
+async function getAvailableAttendanceForShift(employeeID) {
+  const response = await fetch(
+    `${API_URL}?action=getAvailableAttendanceForShift&employeeID=${encodeURIComponent(employeeID)}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to load available attendance."
+    );
+  }
+
+  return result;
+}
+
+
+async function createShift(shiftData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "createShift",
+      data: shiftData
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to create shift."
+    );
+  }
+
+  return result;
+}
