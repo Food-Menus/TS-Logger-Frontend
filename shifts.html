@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TS Logger System - Shifts</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        .page-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .page-nav a {
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            background: #252b36;
+            color: #fff;
+        }
+
+        .page-nav a.active {
+            background: #0891b2;
+        }
+
+        .shift-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .shift-card {
+            background: var(--card-bg, #1e293b);
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+
+        .shift-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .shift-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .shift-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .shift-field label {
+            font-weight: 600;
+        }
+
+        .shift-field input,
+        .shift-field select {
+            width: 100%;
+            min-height: 42px;
+            padding: 9px 12px;
+            border: 1px solid var(--border-color, #475569);
+            border-radius: 7px;
+            background: var(--input-bg, #0f172a);
+            color: var(--text-color, #fff);
+            box-sizing: border-box;
+        }
+
+        .shift-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .shift-actions button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 20px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .shift-primary-button {
+            background: #0891b2;
+            color: white;
+        }
+
+        .shift-secondary-button {
+            background: #475569;
+            color: white;
+        }
+
+        .shift-actions button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .shift-message {
+            display: none;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+
+        .shift-message.success {
+            display: block;
+            background: #064e3b;
+            color: #d1fae5;
+        }
+
+        .shift-message.error {
+            display: block;
+            background: #7f1d1d;
+            color: #fee2e2;
+        }
+
+        .shift-message.info {
+            display: block;
+            background: #164e63;
+            color: #cffafe;
+        }
+
+        .shift-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .shift-preview-item {
+            background: rgba(100, 116, 139, 0.12);
+            border: 1px solid var(--border-color, #334155);
+            border-radius: 9px;
+            padding: 14px;
+        }
+
+        .shift-preview-item span {
+            display: block;
+            color: #94a3b8;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .shift-preview-item strong {
+            font-size: 17px;
+        }
+
+        .shift-note {
+            color: #94a3b8;
+            font-size: 13px;
+            line-height: 1.7;
+            margin-top: 15px;
+        }
+
+        .shift-empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 20px;
+        }
+
+        @media (max-width: 650px) {
+            .shift-form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .shift-preview-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container shift-container">
+
+        <header>
+            <h1>TS Logger System</h1>
+            <p>إدارة وإنشاء الورديات</p>
+        </header>
+
+        <nav class="page-nav">
+            <a href="index.html">إدارة الموظفين</a>
+            <a href="attendance.html">إدارة الحضور</a>
+            <a href="shifts.html" class="active">إدارة الورديات</a>
+        </nav>
+
+        <main>
+            <div id="shiftMessage" class="shift-message"></div>
+
+            <section class="shift-card">
+                <h2>1. اختيار الموظف</h2>
+
+                <div class="shift-form-grid">
+                    <div class="shift-field">
+                        <label for="shiftEmployeeSelect">الموظف</label>
+                        <select id="shiftEmployeeSelect">
+                            <option value="">جاري تحميل الموظفين...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="shift-actions">
+                    <button
+                        type="button"
+                        id="loadShiftAttendanceButton"
+                        class="shift-primary-button"
+                    >
+                        تحميل البصمات المتاحة
+                    </button>
+                </div>
+            </section>
+
+            <section class="shift-card">
+                <h2>2. اختيار بصمات الوردية</h2>
+
+                <div id="shiftFormArea">
+                    <div class="shift-form-grid">
+                        <div class="shift-field">
+                            <label for="shiftCheckInSelect">بصمة الحضور (IN)</label>
+                            <select id="shiftCheckInSelect" disabled>
+                                <option value="">اختر بصمة الحضور</option>
+                            </select>
+                        </div>
+
+                        <div class="shift-field">
+                            <label for="shiftCheckOutSelect">بصمة الانصراف (OUT)</label>
+                            <select id="shiftCheckOutSelect" disabled>
+                                <option value="">اختر بصمة الانصراف</option>
+                            </select>
+                        </div>
+
+                        <div class="shift-field">
+                            <label for="plannedCheckIn">وقت بداية الوردية المخطط</label>
+                            <input
+                                type="time"
+                                id="plannedCheckIn"
+                                value="09:00"
+                                step="60"
+                            >
+                        </div>
+
+                        <div class="shift-field">
+                            <label for="shiftHours">عدد ساعات الوردية</label>
+                            <input
+                                type="number"
+                                id="shiftHours"
+                                value="8"
+                                min="0.01"
+                                max="24"
+                                step="0.25"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="shift-actions">
+                        <button
+                            type="button"
+                            id="createShiftButton"
+                            class="shift-primary-button"
+                            disabled
+                        >
+                            إنشاء الوردية
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="shift-card">
+                <h2>3. المعاينة المالية</h2>
+
+                <div class="shift-preview-grid">
+                    <div class="shift-preview-item">
+                        <span>أجر الساعة</span>
+                        <strong id="previewHourlyRate">-</strong>
+                    </div>
+
+                    <div class="shift-preview-item">
+                        <span>قيمة الوردية</span>
+                        <strong id="previewShiftValue">-</strong>
+                    </div>
+
+                    <div class="shift-preview-item">
+                        <span>مدة العمل الفعلية</span>
+                        <strong id="previewActualDuration">-</strong>
+                    </div>
+
+                    <div class="shift-preview-item">
+                        <span>التأخير</span>
+                        <strong id="previewLateMinutes">-</strong>
+                    </div>
+
+                    <div class="shift-preview-item">
+                        <span>الانصراف المبكر</span>
+                        <strong id="previewEarlyMinutes">-</strong>
+                    </div>
+
+                    <div class="shift-preview-item">
+                        <span>إجمالي المستحق المتوقع</span>
+                        <strong id="previewTotalAmount">-</strong>
+                    </div>
+                </div>
+
+                <p class="shift-note">
+                    هذه معاينة تقديرية لمساعدتك أثناء إنشاء الوردية.
+                    الحساب النهائي والتحقق من البيانات يتمان داخل الخادم
+                    (Backend)، وهو المصدر الأساسي للحسابات.
+                    لا تشمل المعاينة أي معاملات مالية إضافية.
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/shifts.js"></script>
+</body>
+</html>
