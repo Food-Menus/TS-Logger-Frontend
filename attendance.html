@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 
@@ -40,6 +41,8 @@
       margin-top: 30px;
     }
 
+    /* Section selector */
+
     .section-selector {
       margin-top: 25px;
       padding: 20px;
@@ -60,6 +63,8 @@
       padding: 12px;
       border-radius: 8px;
     }
+
+    /* Import and raw attendance tables */
 
     #attendancePreview,
     #rawAttendancePreview {
@@ -95,6 +100,8 @@
       color: var(--color-success);
       font-weight: bold;
     }
+
+    /* Attendance review */
 
     .filter-group {
       margin-bottom: 15px;
@@ -147,23 +154,6 @@
       color: #16a34a;
       font-weight: bold;
     }
-
-    #shiftManagementSection .form-group {
-      margin-bottom: 18px;
-    }
-
-    #shiftManagementSection input,
-    #shiftManagementSection select {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px;
-      border-radius: 8px;
-    }
-
-    #shiftManagementSection h3 {
-      margin-top: 28px;
-      color: var(--color-primary);
-    }
   </style>
 </head>
 
@@ -176,7 +166,9 @@
     <nav class="page-navigation">
       <a href="index.html">إدارة الموظفين</a>
       <a href="attendance.html" class="active">سجلات البصمات</a>
+      <a href="shifts.html">إدارة الورديات</a>
     </nav>
+
 
     <!-- Section Selector -->
 
@@ -200,13 +192,10 @@
           مراجعة وتصنيف البصمات
         </option>
 
-        <option value="shifts">
-          إدارة الورديات
-        </option>
-
       </select>
 
     </section>
+
 
     <!-- 1. Import Attendance -->
 
@@ -285,6 +274,7 @@
 
     </section>
 
+
     <!-- 2. Saved Raw Attendance -->
 
     <section
@@ -315,6 +305,7 @@
 
     </section>
 
+
     <!-- 3. Attendance Review -->
 
     <section
@@ -340,6 +331,8 @@
 
         <h3>تصفية سجلات المراجعة</h3>
 
+        <!-- Employee Mode -->
+
         <div class="filter-group">
 
           <label for="reviewEmployeeMode">
@@ -360,6 +353,9 @@
 
         </div>
 
+
+        <!-- Employee Search -->
+
         <div
           class="filter-group"
           id="reviewEmployeeSelectGroup"
@@ -378,6 +374,9 @@
           >
 
         </div>
+
+
+        <!-- Date Filters -->
 
         <div class="filter-group">
 
@@ -399,6 +398,9 @@
 
         </div>
 
+
+        <!-- Filter Buttons -->
+
         <button type="button" id="applyReviewFilterButton">
           تطبيق التصفية
         </button>
@@ -406,6 +408,9 @@
         <button type="button" id="resetReviewFilterButton">
           عرض جميع السجلات
         </button>
+
+
+        <!-- Review Summary -->
 
         <div id="attendanceReviewSummary"></div>
 
@@ -415,6 +420,9 @@
           فعل مربع الاعتماد فقط عندما تكون متأكدًا من التصنيف.
           السجلات التي لا يتم اختيار تصنيف لها ستظل معلقة.
         </p>
+
+
+        <!-- Save Review -->
 
         <button type="button" id="saveAttendanceReviewButton">
           حفظ التصنيفات والمراجعة
@@ -426,110 +434,15 @@
 
     </section>
 
-    <!-- 4. Shift Management -->
-
-    <section
-      id="shiftManagementSection"
-      class="attendance-section"
-      hidden
-    >
-
-      <h2>إدارة الورديات</h2>
-
-      <p>
-        اختر الموظف ثم حدد بصمتي الحضور والانصراف المعتمدتين لإنشاء الوردية.
-      </p>
-
-      <div class="form-group">
-        <label for="shiftEmployeeSelect">الموظف</label>
-        <select id="shiftEmployeeSelect">
-          <option value="">اختر الموظف</option>
-        </select>
-      </div>
-
-      <button type="button" id="loadShiftAttendanceButton">
-        تحميل البصمات المتاحة
-      </button>
-
-      <p id="shiftMessage"></p>
-
-      <div id="shiftFormArea" hidden>
-
-        <h3>اختيار البصمات</h3>
-
-        <div class="form-group">
-          <label for="shiftCheckInSelect">بصمة الحضور (IN)</label>
-          <select id="shiftCheckInSelect">
-            <option value="">اختر بصمة الحضور</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="shiftCheckOutSelect">بصمة الانصراف (OUT)</label>
-          <select id="shiftCheckOutSelect">
-            <option value="">اختر بصمة الانصراف</option>
-          </select>
-        </div>
-
-        <h3>بيانات الوردية</h3>
-
-        <div class="form-group">
-          <label for="plannedCheckIn">ميعاد بداية الوردية المخطط</label>
-          <input type="time" id="plannedCheckIn" value="09:00" required>
-        </div>
-
-        <div class="form-group">
-          <label for="shiftHours">عدد ساعات الوردية</label>
-          <input type="number" id="shiftHours" min="0.01" step="0.01" value="8" required>
-        </div>
-
-        <h3>الإضافات والخصومات</h3>
-
-        <div class="form-group">
-          <label for="shiftAdditionalAmount">إضافات مالية</label>
-          <input type="number" id="shiftAdditionalAmount" min="0" step="0.01" value="0">
-        </div>
-
-        <div class="form-group">
-          <label for="shiftIncentives">حوافز</label>
-          <input type="number" id="shiftIncentives" min="0" step="0.01" value="0">
-        </div>
-
-        <div class="form-group">
-          <label for="shiftLateDeduction">خصم التأخير</label>
-          <input type="number" id="shiftLateDeduction" min="0" step="0.01" value="0">
-        </div>
-
-        <div class="form-group">
-          <label for="shiftEarlyLeaveDeduction">خصم الانصراف المبكر</label>
-          <input type="number" id="shiftEarlyLeaveDeduction" min="0" step="0.01" value="0">
-        </div>
-
-        <div class="form-group">
-          <label for="shiftAdvances">السلف</label>
-          <input type="number" id="shiftAdvances" min="0" step="0.01" value="0">
-        </div>
-
-        <div class="form-group">
-          <label for="shiftGeneralDeduction">خصومات أخرى</label>
-          <input type="number" id="shiftGeneralDeduction" min="0" step="0.01" value="0">
-        </div>
-
-        <button type="button" id="createShiftButton">
-          إنشاء الوردية
-        </button>
-
-      </div>
-
-    </section>
-
   </main>
+
 
   <!-- JavaScript Files -->
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/attendance.js"></script>
+
 
   <!-- Section Switching -->
 
@@ -540,8 +453,7 @@
       const sections = {
         import: document.getElementById("attendanceImportSection"),
         raw: document.getElementById("rawAttendanceSection"),
-        review: document.getElementById("attendanceReviewSection"),
-        shifts: document.getElementById("shiftManagementSection")
+        review: document.getElementById("attendanceReviewSection")
       };
 
       function switchSection() {
