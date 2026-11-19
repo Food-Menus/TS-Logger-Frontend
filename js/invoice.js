@@ -1,265 +1,280 @@
 
-/**
- * EMPLOYEE INVOICE PAGE
- */
+"use strict";
 
 const invoiceState = {
+  employees: [],
   records: [],
-  filteredRecords: [],
+  selectedEmployee: null,
   startDate: "",
   endDate: "",
-  employeeID: "",
-  employeeName: ""
+  totals: null
 };
-
-const invoiceElements = {
-  startDate: document.getElementById("startDate"),
-  endDate: document.getElementById("endDate"),
-  employeeSelect: document.getElementById("employeeSelect"),
-
-  generateBtn: document.getElementById("generateInvoiceBtn"),
-  excelBtn: document.getElementById("exportExcelBtn"),
-  pngBtn: document.getElementById("exportPngBtn"),
-  printBtn: document.getElementById("printInvoiceBtn"),
-
-  message: document.getElementById("invoiceMessage"),
-  container: document.getElementById("invoiceContainer"),
-  empty: document.getElementById("invoiceEmpty"),
-  paper: document.getElementById("invoicePaper"),
-
-  period: document.getElementById("invoicePeriod"),
-  employee: document.getElementById("invoiceEmployee"),
-  employeeID: document.getElementById("invoiceEmployeeID"),
-
-  attendanceDays: document.getElementById("attendanceDays"),
-  absenceDays: document.getElementById("absenceDays"),
-  hourlyRate: document.getElementById("hourlyRate"),
-  totalEntitlements: document.getElementById("totalEntitlements"),
-  totalDeductions: document.getElementById("totalDeductions"),
-  netSalary: document.getElementById("netSalary"),
-
-  tableBody: document.getElementById("invoiceTableBody"),
-  tableFoot: document.getElementById("invoiceTableFoot"),
-  generatedAt: document.getElementById("invoiceGeneratedAt")
-};
-
 
 document.addEventListener("DOMContentLoaded", initializeInvoicePage);
 
-
-/**
- * Initialize page.
- */
-function initializeInvoicePage() {
-  const today = getLocalDateString();
-  const firstDay = today.slice(0, 8) + "01";
-
-  invoiceElements.startDate.value = firstDay;
-  invoiceElements.endDate.value = today;
-
-  invoiceElements.generateBtn.addEventListener(
-    "click",
-    generateInvoice
-  );
-
-  invoiceElements.excelBtn.addEventListener(
-    "click",
-    exportInvoiceExcel
-  );
-
-  invoiceElements.pngBtn.addEventListener(
-    "click",
-    exportInvoicePNG
-  );
-
-  invoiceElements.printBtn.addEventListener(
-    "click",
-    printInvoice
-  );
+async function initializeInvoicePage() {
+  setDefaultDates();
+  attachInvoiceEvents();
+  await loadInvoiceEmployees();
 }
 
+function setDefaultDates() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
 
-/**
- * Generate invoice from selected filters.
- */
+  document.getElementById("startDate").value = toInputDate(firstDay);
+  document.getElementById("endDate").value = toInputDate(today);
+}
+
+function toInputDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function attachInvoiceEvents() {
+  document
+    .getElementById("generateInvoiceBtn")
+    .addEventListener("click", generateInvoice);
+
+  document
+    .getElementById("exportExcelBtn")
+    .addEventListener("click", exportInvoiceToExcel);
+
+  document
+    .getElementById("exportPngBtn")
+    .addEventListener("click", exportInvoiceToPng);
+
+  document
+    .getElementById("printInvoiceBtn")
+    .addEventListener("click", printInvoice);
+
+  document
+    .getElementById("employeeSelect")
+    .addEventListener("change", clearPreviousInvoice);
+
+  document
+    .getElementById("startDate")
+    .addEventListener("change", clearPreviousInvoice);
+
+  document
+    .getElementById("endDate")
+    .addEventListener("change", clearPreviousInvoice);
+}
+
+async function loadInvoiceEmployees() {
+  const employeeSelect = document.getElementById("employeeSelect");
+
+  try {
+    employeeSelect.innerHTML = '<option value="">جاري تحميل الموظفين...</option>';
+
+    const employees = await getEmployees();
+
+    if (!Array.isArray(employees)) {
+      throw new Error("بيانات الموظفين غير صحيحة.");
+    }
+
+    invoiceState.employees = employees;
+
+    if (employees.length === 0) {
+      employeeSelect.innerHTML =
+        '<option value="">لا يوجد موظفون مسجلون</option>';
+      return;
+    }
+
+    employeeSelect.innerHTML =
+      '<option value="">اختر الموظف</option>';
+
+    employees.forEach(employee => {
+      const employeeID = employee.employeeID;
+      const employeeName = employee.employeeName;
+
+      if (employeeID === undefined || employeeID === null) {
+        return;
+      }
+
+      const option = document.createElement("option");
+      option.value = String(employeeID);
+      option.textContent = employeeName || `موظف رقم ${employeeID}`;
+
+      employeeSelect.appendChild(option);
+    });
+
+  } catch (error) {
+    employeeSelect.innerHTML =
+      '<option value="">تعذر تحميل الموظفين</option>';
+
+    showInvoiceMessage(error.message, true);
+  }
+}
+
+function clearPreviousInvoice() {
+  invoiceState.records = [];
+  invoiceState.selectedEmployee = null;
+  invoiceState.totals = null;
+
+  document.getElementById("invoicePaper").style.display = "none";
+
+  setExportButtonsEnabled(false);
+  hideInvoiceMessage();
+}
+
 async function generateInvoice() {
-  const startDate = invoiceElements.startDate.value;
-  const endDate = invoiceElements.endDate.value;
-  const employeeID = invoiceElements.employeeSelect.value;
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const employeeID = document.getElementById("employeeSelect").value;
 
-  if (!startDate || !endDate) {
-    showInvoiceMessage("من فضلك اختر تاريخ البداية والنهاية.", "error");
+  if (!startDate || !endDate || !employeeID) {
+    showInvoiceMessage(
+      "من فضلك حدد تاريخ البداية وتاريخ النهاية واختر الموظف.",
+      true
+    );
     return;
   }
 
   if (startDate > endDate) {
     showInvoiceMessage(
-      "تاريخ البداية يجب أن يكون قبل تاريخ النهاية.",
-      "error"
+      "تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساويًا له.",
+      true
     );
     return;
   }
 
-  setInvoiceLoading(true);
+  const selectedEmployee = invoiceState.employees.find(
+    employee => String(employee.employeeID) === String(employeeID)
+  );
 
-  invoiceElements.container.classList.add("hidden");
-  invoiceElements.empty.classList.remove("hidden");
+  if (!selectedEmployee) {
+    showInvoiceMessage("الموظف المحدد غير موجود.", true);
+    return;
+  }
 
-  invoiceElements.empty.textContent = "جاري إنشاء الفاتورة...";
+  const generateButton = document.getElementById("generateInvoiceBtn");
 
   try {
+    generateButton.disabled = true;
+    generateButton.textContent = "جاري إنشاء الفاتورة...";
+
+    hideInvoiceMessage();
+    setExportButtonsEnabled(false);
+
+    document.getElementById("invoicePaper").style.display = "none";
+
     const result = await getShiftsByDateRange(
       startDate,
       endDate,
       employeeID
     );
 
-    invoiceState.records = result.records || [];
+    if (!result || result.success !== true) {
+      throw new Error(
+        result?.message || "تعذر تحميل بيانات الفاتورة."
+      );
+    }
+
+    const records = Array.isArray(result.records)
+      ? result.records
+      : [];
+
+    // حماية إضافية: لا نعرض بيانات موظف آخر حتى لو رجعها الخادم بالخطأ.
+    const employeeRecords = records.filter(
+      record => String(record.employeeID) === String(employeeID)
+    );
+
+    invoiceState.records = employeeRecords;
+    invoiceState.selectedEmployee = selectedEmployee;
     invoiceState.startDate = startDate;
     invoiceState.endDate = endDate;
-    invoiceState.employeeID = employeeID;
 
-    updateEmployeeOptions(invoiceState.records);
-
-    // Keep the selected employee after rebuilding options.
-    invoiceElements.employeeSelect.value = employeeID;
-
-    invoiceState.filteredRecords = invoiceState.records;
-
-    if (!invoiceState.filteredRecords.length) {
-      invoiceElements.empty.textContent =
-        "لا توجد شيفتات مسجلة للبيانات المحددة.";
-
-      disableExportButtons();
-
+    if (employeeRecords.length === 0) {
       showInvoiceMessage(
-        "لم يتم العثور على شيفتات في الفترة المحددة.",
-        "info"
+        "لا توجد ورديات لهذا الموظف خلال الفترة المحددة.",
+        true
       );
-
       return;
     }
 
-    renderInvoice(invoiceState.filteredRecords);
+    renderInvoice();
 
-    invoiceElements.container.classList.remove("hidden");
-    invoiceElements.empty.classList.add("hidden");
+    document.getElementById("invoicePaper").style.display = "block";
 
-    enableExportButtons();
-    hideInvoiceMessage();
+    setExportButtonsEnabled(true);
+
+    showInvoiceMessage(
+      `تم إنشاء الفاتورة بنجاح. عدد الورديات: ${employeeRecords.length}`,
+      false
+    );
 
   } catch (error) {
-    invoiceElements.empty.textContent =
-      "تعذر إنشاء الفاتورة.";
-
-    showInvoiceMessage(error.message, "error");
-
-    disableExportButtons();
+    showInvoiceMessage(
+      error.message || "حدث خطأ أثناء إنشاء الفاتورة.",
+      true
+    );
 
   } finally {
-    setInvoiceLoading(false);
+    generateButton.disabled = false;
+    generateButton.textContent = "إنشاء الفاتورة";
   }
 }
 
+function renderInvoice() {
+  const employee = invoiceState.selectedEmployee;
+  const records = invoiceState.records;
 
-/**
- * Update employee dropdown from loaded shifts.
- */
-function updateEmployeeOptions(records) {
-  const selectedValue = invoiceElements.employeeSelect.value;
+  const employeeName = employee.employeeName || "—";
+  const employeeID = employee.employeeID;
 
-  const employees = {};
+  const periodText =
+    `${formatDate(invoiceState.startDate)} - ${formatDate(invoiceState.endDate)}`;
 
-  records.forEach(record => {
-    const id = String(record.employeeID || "").trim();
+  document.getElementById("invoicePeriod").textContent =
+    `الفترة: ${periodText}`;
 
-    if (!id) return;
+  document.getElementById("invoiceEmployeeName").textContent =
+    `اسم الموظف: ${employeeName}`;
 
-    employees[id] = record.employeeName || id;
-  });
+  document.getElementById("infoEmployeeName").textContent =
+    employeeName;
 
-  const employeeList = Object.keys(employees).sort((a, b) =>
-    String(employees[a]).localeCompare(
-      String(employees[b]),
-      "ar"
-    )
-  );
+  document.getElementById("infoEmployeeID").textContent =
+    employeeID;
 
-  invoiceElements.employeeSelect.innerHTML =
-    '<option value="">كل الموظفين</option>' +
-    employeeList.map(id => {
-      return `
-        <option value="${escapeInvoiceHTML(id)}">
-          ${escapeInvoiceHTML(employees[id])}
-        </option>
-      `;
-    }).join("");
+  document.getElementById("infoPeriod").textContent =
+    periodText;
 
-  if (employeeList.includes(selectedValue)) {
-    invoiceElements.employeeSelect.value = selectedValue;
-  }
-}
+  const totals = calculateInvoiceTotals(records, employee);
 
+  invoiceState.totals = totals;
 
-/**
- * Render complete invoice.
- */
-function renderInvoice(records) {
-  if (!records.length) return;
+  document.getElementById("attendanceDays").textContent =
+    totals.attendanceDays;
 
-  const firstRecord = records[0];
-
-  const employeeName = invoiceState.employeeID
-    ? firstRecord.employeeName
-    : "كل الموظفين";
-
-  const employeeID = invoiceState.employeeID || "—";
-
-  const totals = calculateInvoiceTotals(records);
-
-  invoiceState.employeeName = employeeName;
-
-  invoiceElements.period.textContent =
-    `${invoiceState.startDate} إلى ${invoiceState.endDate}`;
-
-  invoiceElements.employee.textContent = employeeName;
-  invoiceElements.employeeID.textContent = employeeID;
-
-  invoiceElements.attendanceDays.textContent =
-    String(totals.attendanceDays);
-
-  invoiceElements.absenceDays.textContent =
+  // لا يوجد حاليًا مصدر مستقل ومعتمد لحساب أيام الغياب.
+  document.getElementById("absenceDays").textContent =
     "غير متاح";
 
-  invoiceElements.hourlyRate.textContent =
-    formatInvoiceMoney(totals.hourlyRate);
+  document.getElementById("hourlyRate").textContent =
+    formatMoney(totals.hourlyRate);
 
-  invoiceElements.totalEntitlements.textContent =
-    formatInvoiceMoney(totals.entitlements);
+  document.getElementById("totalEntitlements").textContent =
+    formatMoney(totals.totalEntitlements);
 
-  invoiceElements.totalDeductions.textContent =
-    formatInvoiceMoney(totals.deductions);
+  document.getElementById("totalDeductions").textContent =
+    formatMoney(totals.totalDeductions);
 
-  invoiceElements.netSalary.textContent =
-    formatInvoiceMoney(totals.netSalary);
+  document.getElementById("netSalary").textContent =
+    formatMoney(totals.netSalary);
 
-  renderInvoiceRows(records, totals);
-
-  invoiceElements.generatedAt.textContent =
-    "تاريخ الإصدار: " +
-    new Date().toLocaleString("ar-EG");
+  renderInvoiceTable(records, totals);
 }
 
-
-/**
- * Calculate invoice totals.
- */
-function calculateInvoiceTotals(records) {
+function calculateInvoiceTotals(records, employee) {
   const totals = {
     attendanceDays: 0,
-    hourlyRate: 0,
-    shiftHours: 0,
     actualHours: 0,
+    shiftHours: 0,
     shiftValue: 0,
     additionalAmount: 0,
     incentives: 0,
@@ -267,352 +282,329 @@ function calculateInvoiceTotals(records) {
     earlyLeaveDeduction: 0,
     advances: 0,
     generalDeduction: 0,
-    entitlements: 0,
-    deductions: 0,
-    netSalary: 0
+    totalEntitlements: 0,
+    totalDeductions: 0,
+    netSalary: 0,
+    hourlyRate: 0
   };
 
+  let weightedRateTotal = 0;
+  let totalRateHours = 0;
+
   records.forEach(record => {
-    const actualMinutes =
-      Number(record.actualDurationMinutes) || 0;
+    const actualMinutes = toNumber(record.actualDurationMinutes);
+    const actualCheckIn = record.actualCheckIn;
+    const actualCheckOut = record.actualCheckOut;
 
-    const hasAttendance =
+    if (
       actualMinutes > 0 ||
-      hasTimeValue(record.actualCheckIn) ||
-      hasTimeValue(record.actualCheckOut);
-
-    if (hasAttendance) {
-      totals.attendanceDays++;
+      (actualCheckIn && actualCheckOut)
+    ) {
+      totals.attendanceDays += 1;
     }
 
-    totals.hourlyRate += Number(record.hourlyRate) || 0;
-
-    totals.shiftHours += Number(record.shiftHours) || 0;
+    const shiftHours = toNumber(record.shiftHours);
+    const hourlyRate = toNumber(record.hourlyRate);
 
     totals.actualHours += actualMinutes / 60;
+    totals.shiftHours += shiftHours;
 
-    totals.shiftValue += Number(record.shiftValue) || 0;
+    weightedRateTotal += hourlyRate * shiftHours;
+    totalRateHours += shiftHours;
 
-    totals.additionalAmount +=
-      Number(record.additionalAmount) || 0;
+    totals.shiftValue += toNumber(record.shiftValue);
+    totals.additionalAmount += toNumber(record.additionalAmount);
+    totals.incentives += toNumber(record.incentives);
+    totals.lateDeduction += toNumber(record.lateDeduction);
+    totals.earlyLeaveDeduction += toNumber(record.earlyLeaveDeduction);
+    totals.advances += toNumber(record.advances);
+    totals.generalDeduction += toNumber(record.generalDeduction);
 
-    totals.incentives += Number(record.incentives) || 0;
+    totals.totalEntitlements +=
+      toNumber(record.shiftValue) +
+      toNumber(record.additionalAmount) +
+      toNumber(record.incentives);
 
-    totals.lateDeduction +=
-      Number(record.lateDeduction) || 0;
+    totals.totalDeductions +=
+      toNumber(record.lateDeduction) +
+      toNumber(record.earlyLeaveDeduction) +
+      toNumber(record.advances) +
+      toNumber(record.generalDeduction);
 
-    totals.earlyLeaveDeduction +=
-      Number(record.earlyLeaveDeduction) || 0;
-
-    totals.advances += Number(record.advances) || 0;
-
-    totals.generalDeduction +=
-      Number(record.generalDeduction) || 0;
-
-    totals.netSalary += Number(record.totalAmount) || 0;
+    totals.netSalary += toNumber(record.totalAmount);
   });
 
-  totals.entitlements =
-    totals.shiftValue +
-    totals.additionalAmount +
-    totals.incentives;
-
-  totals.deductions =
-    totals.lateDeduction +
-    totals.earlyLeaveDeduction +
-    totals.advances +
-    totals.generalDeduction;
-
-  Object.keys(totals).forEach(key => {
-    if (typeof totals[key] === "number") {
-      totals[key] = roundInvoiceMoney(totals[key]);
-    }
-  });
+  // متوسط مرجح لأجر الساعة حسب ساعات الورديات.
+  // إذا لم تتوفر ساعات وردية، نستخدم أجر الموظف المسجل.
+  if (totalRateHours > 0) {
+    totals.hourlyRate = weightedRateTotal / totalRateHours;
+  } else {
+    totals.hourlyRate = toNumber(employee.hourlyRate);
+  }
 
   return totals;
 }
 
+function renderInvoiceTable(records, totals) {
+  const tbody = document.getElementById("invoiceTableBody");
+  const tfoot = document.getElementById("invoiceTableFooter");
 
-/**
- * Render invoice table.
- */
-function renderInvoiceRows(records, totals) {
-  invoiceElements.tableBody.innerHTML = records.map(record => {
-    const actualHours =
-      (Number(record.actualDurationMinutes) || 0) / 60;
-
-    return `
-      <tr>
-        <td>${escapeInvoiceHTML(record.shiftDate)}</td>
-
-        <td>${escapeInvoiceHTML(
-          record.dayName || getArabicDayName(record.shiftDate)
-        )}</td>
-
-        <td>${escapeInvoiceHTML(
-          getShiftStatusLabel(record.status)
-        )}</td>
-
-        <td>${escapeInvoiceHTML(
-          formatInvoiceTime(record.actualCheckIn)
-        )}</td>
-
-        <td>${escapeInvoiceHTML(
-          formatInvoiceTime(record.actualCheckOut)
-        )}</td>
-
-        <td>${formatInvoiceNumber(actualHours)}</td>
-
-        <td>${formatInvoiceNumber(record.shiftHours)}</td>
-
-        <td>${formatInvoiceNumber(record.shiftValue)}</td>
-
-        <td>${formatInvoiceNumber(record.additionalAmount)}</td>
-
-        <td>${formatInvoiceNumber(record.incentives)}</td>
-
-        <td>${formatInvoiceNumber(record.lateDeduction)}</td>
-
-        <td>${formatInvoiceNumber(record.earlyLeaveDeduction)}</td>
-
-        <td>${formatInvoiceNumber(record.advances)}</td>
-
-        <td>${formatInvoiceNumber(record.generalDeduction)}</td>
-
-        <td><strong>${formatInvoiceNumber(record.totalAmount)}</strong></td>
-      </tr>
-    `;
-  }).join("");
-
-  invoiceElements.tableFoot.innerHTML = `
-    <tr>
-      <td colspan="5">الإجمالي</td>
-      <td>${formatInvoiceNumber(totals.actualHours)}</td>
-      <td>${formatInvoiceNumber(totals.shiftHours)}</td>
-      <td>${formatInvoiceNumber(totals.shiftValue)}</td>
-      <td>${formatInvoiceNumber(totals.additionalAmount)}</td>
-      <td>${formatInvoiceNumber(totals.incentives)}</td>
-      <td>${formatInvoiceNumber(totals.lateDeduction)}</td>
-      <td>${formatInvoiceNumber(totals.earlyLeaveDeduction)}</td>
-      <td>${formatInvoiceNumber(totals.advances)}</td>
-      <td>${formatInvoiceNumber(totals.generalDeduction)}</td>
-      <td>${formatInvoiceNumber(totals.netSalary)}</td>
-    </tr>
-  `;
-}
-
-
-/**
- * Export invoice to Excel.
- */
-function exportInvoiceExcel() {
-  if (!invoiceState.filteredRecords.length) return;
-
-  if (typeof XLSX === "undefined") {
-    showInvoiceMessage(
-      "تعذر تحميل مكتبة Excel. تأكد من اتصال الإنترنت.",
-      "error"
-    );
-    return;
-  }
-
-  const records = invoiceState.filteredRecords;
-  const totals = calculateInvoiceTotals(records);
-
-  const rows = [
-    ["TS Logger - كشف حساب موظف"],
-    ["الموظف", invoiceState.employeeName],
-    ["كود الموظف", invoiceState.employeeID || "كل الموظفين"],
-    ["من تاريخ", invoiceState.startDate],
-    ["إلى تاريخ", invoiceState.endDate],
-    [],
-    ["الملخص المالي"],
-    ["أيام الحضور", totals.attendanceDays],
-    ["أيام الغياب", "غير متاح"],
-    ["سعر الساعة", totals.hourlyRate],
-    ["إجمالي المستحقات", totals.entitlements],
-    ["إجمالي الخصومات", totals.deductions],
-    ["صافي الراتب", totals.netSalary],
-    [],
-    [
-      "التاريخ",
-      "اليوم",
-      "الحالة",
-      "الحضور",
-      "الانصراف",
-      "ساعات العمل الفعلية",
-      "ساعات الشيفت",
-      "قيمة الشيفت",
-      "إضافي",
-      "حوافز",
-      "خصم تأخير",
-      "خصم انصراف مبكر",
-      "سلف",
-      "خصومات أخرى",
-      "الصافي"
-    ]
-  ];
+  tbody.innerHTML = "";
+  tfoot.innerHTML = "";
 
   records.forEach(record => {
-    rows.push([
-      record.shiftDate,
-      record.dayName || getArabicDayName(record.shiftDate),
+    const row = document.createElement("tr");
+
+    const actualMinutes = toNumber(record.actualDurationMinutes);
+    const actualHours = actualMinutes / 60;
+
+    const values = [
+      formatDate(record.shiftDate),
+      record.dayName || getDayName(record.shiftDate),
       getShiftStatusLabel(record.status),
       formatInvoiceTime(record.actualCheckIn),
       formatInvoiceTime(record.actualCheckOut),
-      roundInvoiceMoney(
-        (Number(record.actualDurationMinutes) || 0) / 60
-      ),
-      Number(record.shiftHours) || 0,
-      Number(record.shiftValue) || 0,
-      Number(record.additionalAmount) || 0,
-      Number(record.incentives) || 0,
-      Number(record.lateDeduction) || 0,
-      Number(record.earlyLeaveDeduction) || 0,
-      Number(record.advances) || 0,
-      Number(record.generalDeduction) || 0,
-      Number(record.totalAmount) || 0
-    ]);
+      actualHours.toFixed(2),
+      toNumber(record.shiftHours).toFixed(2),
+      formatMoney(record.shiftValue),
+      formatMoney(record.additionalAmount),
+      formatMoney(record.incentives),
+      formatMoney(record.lateDeduction),
+      formatMoney(record.earlyLeaveDeduction),
+      formatMoney(record.advances),
+      formatMoney(record.generalDeduction),
+      formatMoney(record.totalAmount)
+    ];
+
+    values.forEach((value, index) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+
+      if (index === 14) {
+        cell.classList.add("invoice-net-value");
+      }
+
+      row.appendChild(cell);
+    });
+
+    tbody.appendChild(row);
   });
 
-  rows.push([
+  const totalRow = document.createElement("tr");
+
+  const footerValues = [
     "الإجمالي",
-    "",
-    "",
-    "",
-    "",
-    totals.actualHours,
-    totals.shiftHours,
-    totals.shiftValue,
-    totals.additionalAmount,
-    totals.incentives,
-    totals.lateDeduction,
-    totals.earlyLeaveDeduction,
-    totals.advances,
-    totals.generalDeduction,
-    totals.netSalary
-  ]);
-
-  const worksheet = XLSX.utils.aoa_to_sheet(rows);
-
-  worksheet["!cols"] = [
-    { wch: 14 },
-    { wch: 14 },
-    { wch: 16 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 18 },
-    { wch: 15 },
-    { wch: 15 },
-    { wch: 12 },
-    { wch: 12 },
-    { wch: 15 },
-    { wch: 19 },
-    { wch: 12 },
-    { wch: 15 },
-    { wch: 15 }
+    "—",
+    "—",
+    "—",
+    "—",
+    totals.actualHours.toFixed(2),
+    totals.shiftHours.toFixed(2),
+    formatMoney(totals.shiftValue),
+    formatMoney(totals.additionalAmount),
+    formatMoney(totals.incentives),
+    formatMoney(totals.lateDeduction),
+    formatMoney(totals.earlyLeaveDeduction),
+    formatMoney(totals.advances),
+    formatMoney(totals.generalDeduction),
+    formatMoney(totals.netSalary)
   ];
 
-  worksheet["!views"] = [
-    { rightToLeft: true }
-  ];
+  footerValues.forEach((value, index) => {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+
+    if (index === 0) {
+      cell.colSpan = 1;
+    }
+
+    totalRow.appendChild(cell);
+  });
+
+  tfoot.appendChild(totalRow);
+}
+
+function exportInvoiceToExcel() {
+  if (!invoiceState.records.length || !invoiceState.selectedEmployee) {
+    showInvoiceMessage("أنشئ الفاتورة أولًا.", true);
+    return;
+  }
+
+  if (typeof XLSX === "undefined") {
+    showInvoiceMessage("تعذر تحميل مكتبة Excel. تحقق من اتصال الإنترنت.", true);
+    return;
+  }
+
+  const employee = invoiceState.selectedEmployee;
+  const totals = invoiceState.totals;
+
+  const rows = invoiceState.records.map(record => ({
+    "التاريخ": formatDate(record.shiftDate),
+    "اليوم": record.dayName || getDayName(record.shiftDate),
+    "الحالة": getShiftStatusLabel(record.status),
+    "الحضور": formatInvoiceTime(record.actualCheckIn),
+    "الانصراف": formatInvoiceTime(record.actualCheckOut),
+    "ساعات العمل الفعلية": (toNumber(record.actualDurationMinutes) / 60).toFixed(2),
+    "ساعات الوردية": toNumber(record.shiftHours),
+    "قيمة الوردية": toNumber(record.shiftValue),
+    "إضافي مالي": toNumber(record.additionalAmount),
+    "الحوافز": toNumber(record.incentives),
+    "خصم التأخير": toNumber(record.lateDeduction),
+    "خصم الانصراف المبكر": toNumber(record.earlyLeaveDeduction),
+    "السلف": toNumber(record.advances),
+    "خصومات أخرى": toNumber(record.generalDeduction),
+    "صافي الوردية": toNumber(record.totalAmount)
+  }));
+
+  rows.push({
+    "التاريخ": "الإجمالي",
+    "اليوم": "",
+    "الحالة": "",
+    "الحضور": "",
+    "الانصراف": "",
+    "ساعات العمل الفعلية": totals.actualHours,
+    "ساعات الوردية": totals.shiftHours,
+    "قيمة الوردية": totals.shiftValue,
+    "إضافي مالي": totals.additionalAmount,
+    "الحوافز": totals.incentives,
+    "خصم التأخير": totals.lateDeduction,
+    "خصم الانصراف المبكر": totals.earlyLeaveDeduction,
+    "السلف": totals.advances,
+    "خصومات أخرى": totals.generalDeduction,
+    "صافي الوردية": totals.netSalary
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  worksheet["!views"] = [{ rightToLeft: true }];
 
   const workbook = XLSX.utils.book_new();
 
   XLSX.utils.book_append_sheet(
     workbook,
     worksheet,
-    "كشف الحساب"
+    "فاتورة الموظف"
   );
 
   const fileName =
-    `Invoice_${invoiceState.employeeID || "All"}_` +
+    `فاتورة_${safeFileName(employee.employeeName)}_` +
     `${invoiceState.startDate}_${invoiceState.endDate}.xlsx`;
 
   XLSX.writeFile(workbook, fileName);
 
-  showInvoiceMessage("تم تصدير ملف Excel بنجاح.", "success");
+  showInvoiceMessage("تم تصدير ملف Excel بنجاح.", false);
 }
 
+async function exportInvoiceToPng() {
+  const invoicePaper = document.getElementById("invoicePaper");
 
-/**
- * Export invoice as PNG.
- */
-async function exportInvoicePNG() {
-  if (!invoiceState.filteredRecords.length) return;
-
-  if (typeof html2canvas === "undefined") {
-    showInvoiceMessage(
-      "تعذر تحميل مكتبة الصور. تأكد من اتصال الإنترنت.",
-      "error"
-    );
+  if (
+    !invoiceState.records.length ||
+    !invoiceState.selectedEmployee
+  ) {
+    showInvoiceMessage("أنشئ الفاتورة أولًا.", true);
     return;
   }
 
-  invoiceElements.pngBtn.disabled = true;
-  invoiceElements.pngBtn.textContent = "جاري تجهيز الصورة...";
+  if (typeof html2canvas === "undefined") {
+    showInvoiceMessage("تعذر تحميل مكتبة تصدير الصور. تحقق من اتصال الإنترنت.", true);
+    return;
+  }
 
   try {
-    const canvas = await html2canvas(
-      invoiceElements.paper,
-      {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false
-      }
-    );
+    const canvas = await html2canvas(invoicePaper, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      width: invoicePaper.scrollWidth,
+      windowWidth: invoicePaper.scrollWidth
+    });
 
     const link = document.createElement("a");
 
     link.download =
-      `Invoice_${invoiceState.employeeID || "All"}_` +
+      `فاتورة_${safeFileName(invoiceState.selectedEmployee.employeeName)}_` +
       `${invoiceState.startDate}_${invoiceState.endDate}.png`;
 
     link.href = canvas.toDataURL("image/png");
-
     link.click();
 
-    showInvoiceMessage("تم تصدير صورة الفاتورة بنجاح.", "success");
+    showInvoiceMessage("تم تصدير صورة الفاتورة بنجاح.", false);
 
   } catch (error) {
     showInvoiceMessage(
-      "حدث خطأ أثناء إنشاء الصورة: " + error.message,
-      "error"
+      "حدث خطأ أثناء تصدير الصورة: " + error.message,
+      true
     );
-
-  } finally {
-    invoiceElements.pngBtn.disabled = false;
-    invoiceElements.pngBtn.textContent = "تصدير PNG";
   }
 }
 
-
-/**
- * Print invoice.
- */
 function printInvoice() {
-  if (!invoiceState.filteredRecords.length) return;
+  if (!invoiceState.records.length) {
+    showInvoiceMessage("أنشئ الفاتورة أولًا.", true);
+    return;
+  }
 
   window.print();
 }
 
-
-/**
- * Check if time value exists.
- */
-function hasTimeValue(value) {
-  return value !== null &&
-    value !== undefined &&
-    String(value).trim() !== "";
+function setExportButtonsEnabled(enabled) {
+  document.getElementById("exportExcelBtn").disabled = !enabled;
+  document.getElementById("exportPngBtn").disabled = !enabled;
+  document.getElementById("printInvoiceBtn").disabled = !enabled;
 }
 
+function showInvoiceMessage(message, isError) {
+  const element = document.getElementById("invoiceMessage");
 
-/**
- * Format time safely.
- */
+  element.textContent = message;
+  element.classList.toggle("error", Boolean(isError));
+  element.style.display = "block";
+}
+
+function hideInvoiceMessage() {
+  const element = document.getElementById("invoiceMessage");
+
+  element.textContent = "";
+  element.style.display = "none";
+  element.classList.remove("error");
+}
+
+function toNumber(value) {
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : 0;
+}
+
+function formatMoney(value) {
+  return `${toNumber(value).toFixed(2)} ج.م`;
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "—";
+  }
+
+  const text = String(value);
+
+  const match = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (match) {
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return text;
+  }
+
+  return new Intl.DateTimeFormat("en-GB").format(date);
+}
+
 function formatInvoiceTime(value) {
-  if (!hasTimeValue(value)) return "—";
+  if (!value) {
+    return "—";
+  }
 
   if (value instanceof Date) {
     return value.toLocaleTimeString("en-GB", {
@@ -621,175 +613,62 @@ function formatInvoiceTime(value) {
     });
   }
 
-  const text = String(value).trim();
+  const text = String(value);
 
-  const isoMatch = text.match(/T(\d{2}:\d{2})/);
-
-  if (isoMatch) {
-    return isoMatch[1];
-  }
-
-  const timeMatch = text.match(/(\d{1,2}:\d{2})/);
+  const timeMatch = text.match(/T(\d{2}):(\d{2})/);
 
   if (timeMatch) {
-    return timeMatch[1];
+    return `${timeMatch[1]}:${timeMatch[2]}`;
+  }
+
+  const directMatch = text.match(/^(\d{1,2}):(\d{2})/);
+
+  if (directMatch) {
+    return `${directMatch[1].padStart(2, "0")}:${directMatch[2]}`;
   }
 
   return text;
 }
 
-
-/**
- * Get Arabic weekday from yyyy-MM-dd.
- */
-function getArabicDayName(dateString) {
-  const parts = String(dateString).split("-").map(Number);
-
-  if (parts.length !== 3 || parts.some(Number.isNaN)) {
+function getDayName(value) {
+  if (!value) {
     return "—";
   }
 
-  const date = new Date(
-    Date.UTC(parts[0], parts[1] - 1, parts[2])
-  );
+  const date = new Date(`${String(value).slice(0, 10)}T12:00:00`);
 
-  return date.toLocaleDateString("ar-EG", {
-    weekday: "long",
-    timeZone: "UTC"
-  });
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("ar-EG", {
+    weekday: "long"
+  }).format(date);
 }
 
-
-/**
- * Translate shift status.
- */
 function getShiftStatusLabel(status) {
-  const value = String(status || "").trim().toUpperCase();
+  if (!status) {
+    return "—";
+  }
 
   const labels = {
-    COMPLETED: "مكتمل",
-    COMPLETE: "مكتمل",
-    PRESENT: "حضور",
-    ABSENT: "غياب",
+    PRESENT: "حاضر",
+    ABSENT: "غائب",
     LATE: "متأخر",
+    EARLY_LEAVE: "انصراف مبكر",
+    COMPLETED: "مكتملة",
     PENDING: "قيد المراجعة",
-    REVIEWED: "تمت المراجعة",
-    APPROVED: "معتمد",
-    REJECTED: "مرفوض"
+    APPROVED: "معتمدة",
+    REJECTED: "مرفوضة",
+    "حاضر": "حاضر",
+    "غائب": "غائب"
   };
 
-  return labels[value] || status || "—";
+  return labels[String(status).toUpperCase()] || String(status);
 }
 
-
-/**
- * Format money.
- */
-function formatInvoiceMoney(value) {
-  return `${formatInvoiceNumber(value)} جنيه`;
-}
-
-
-/**
- * Format numbers.
- */
-function formatInvoiceNumber(value) {
-  return (Number(value) || 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
-}
-
-
-/**
- * Round monetary values.
- */
-function roundInvoiceMoney(value) {
-  return Math.round(
-    (Number(value) + Number.EPSILON) * 100
-  ) / 100;
-}
-
-
-/**
- * Get local date.
- */
-function getLocalDateString() {
-  const date = new Date();
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-
-/**
- * Escape HTML.
- */
-function escapeInvoiceHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, character => {
-    const entities = {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    };
-
-    return entities[character];
-  });
-}
-
-
-/**
- * Show message.
- */
-function showInvoiceMessage(message, type = "info") {
-  invoiceElements.message.textContent = message;
-  invoiceElements.message.className = `message ${type}`;
-  invoiceElements.message.style.display = "block";
-}
-
-
-/**
- * Hide message.
- */
-function hideInvoiceMessage() {
-  invoiceElements.message.textContent = "";
-  invoiceElements.message.className = "message";
-  invoiceElements.message.style.display = "none";
-}
-
-
-/**
- * Enable export buttons.
- */
-function enableExportButtons() {
-  invoiceElements.excelBtn.disabled = false;
-  invoiceElements.pngBtn.disabled = false;
-  invoiceElements.printBtn.disabled = false;
-}
-
-
-/**
- * Disable export buttons.
- */
-function disableExportButtons() {
-  invoiceElements.excelBtn.disabled = true;
-  invoiceElements.pngBtn.disabled = true;
-  invoiceElements.printBtn.disabled = true;
-}
-
-
-/**
- * Generate button loading state.
- */
-function setInvoiceLoading(loading) {
-  invoiceElements.generateBtn.disabled = loading;
-
-  invoiceElements.generateBtn.textContent = loading
-    ? "جاري التحميل..."
-    : "إنشاء الفاتورة";
+function safeFileName(value) {
+  return String(value || "الموظف")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_");
 }
