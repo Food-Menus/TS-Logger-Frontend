@@ -1,0 +1,446 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فاتورة الموظف | TS Logger</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .invoice-page {
+      max-width: 1250px;
+      margin: 25px auto;
+      padding: 16px;
+    }
+
+    .invoice-page .panel {
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color, #ddd);
+      border-radius: 12px;
+      background: var(--card-bg, #fff);
+    }
+
+    .invoice-page .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+      align-items: end;
+    }
+
+    .invoice-page .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .invoice-page input,
+    .invoice-page select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 8px;
+      font: inherit;
+      background: var(--input-bg, #fff);
+      color: inherit;
+    }
+
+    .invoice-page button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .invoice-page button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .invoice-page .primary-btn {
+      background: #087f8c;
+      color: white;
+    }
+
+    .invoice-page .excel-btn {
+      background: #16834a;
+      color: white;
+    }
+
+    .invoice-page .png-btn {
+      background: #475569;
+      color: white;
+    }
+
+    .invoice-page .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .invoice-page .message {
+      display: none;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+
+    .invoice-page .message.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .invoice-page .message.info {
+      display: block;
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .invoice-page .message.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .invoice-paper {
+      background: #fff;
+      color: #172033;
+      padding: 28px;
+      border: 1px solid #d7dee8;
+      border-radius: 12px;
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #087f8c;
+    }
+
+    .invoice-header h2 {
+      margin: 0 0 8px;
+      color: #087f8c;
+    }
+
+    .invoice-header p {
+      margin: 5px 0;
+    }
+
+    .invoice-brand {
+      text-align: left;
+      color: #087f8c;
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .invoice-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 20px 0;
+    }
+
+    .summary-card {
+      padding: 14px;
+      border: 1px solid #dce4ec;
+      border-radius: 9px;
+      background: #f8fafc;
+    }
+
+    .summary-card span {
+      display: block;
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 7px;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 19px;
+      color: #172033;
+      overflow-wrap: anywhere;
+    }
+
+    .summary-card.net {
+      background: #e6f6f5;
+      border-color: #087f8c;
+    }
+
+    .summary-card.net strong {
+      color: #087f8c;
+    }
+
+    .invoice-section-title {
+      margin: 22px 0 12px;
+      font-size: 17px;
+    }
+
+    .invoice-table-wrap {
+      overflow-x: auto;
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1150px;
+      font-size: 12px;
+    }
+
+    .invoice-table th,
+    .invoice-table td {
+      padding: 9px 7px;
+      border: 1px solid #dce4ec;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .invoice-table th {
+      background: #eaf1f5;
+      color: #172033;
+      font-weight: 700;
+    }
+
+    .invoice-table tbody tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .invoice-table tfoot {
+      background: #e6f6f5;
+      font-weight: 800;
+    }
+
+    .invoice-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 25px;
+      padding-top: 15px;
+      border-top: 1px solid #dce4ec;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .invoice-empty {
+      padding: 35px;
+      text-align: center;
+      color: #64748b;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .invoice-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .invoice-paper {
+        padding: 15px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .invoice-page {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .invoice-paper {
+        border: 0;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container invoice-page">
+
+    <header class="no-print">
+      <h1>TS Logger System</h1>
+      <p>فواتير ومستحقات الموظفين</p>
+    </header>
+
+    <nav class="page-navigation no-print">
+      <a href="index.html">الموظفون</a>
+      <a href="attendance.html">الحضور والانصراف</a>
+      <a href="shifts.html">الشيفتات</a>
+      <a href="adjustments.html">التعديلات المالية</a>
+      <a href="invoice.html" class="active">الفواتير</a>
+    </nav>
+
+    <section class="panel no-print">
+      <h2>إعداد الفاتورة</h2>
+
+      <div class="filters">
+        <div class="field">
+          <label for="startDate">من تاريخ</label>
+          <input type="date" id="startDate">
+        </div>
+
+        <div class="field">
+          <label for="endDate">إلى تاريخ</label>
+          <input type="date" id="endDate">
+        </div>
+
+        <div class="field">
+          <label for="employeeSelect">الموظف</label>
+          <select id="employeeSelect">
+            <option value="">كل الموظفين</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <button type="button" class="primary-btn" id="generateInvoiceBtn">
+            إنشاء الفاتورة
+          </button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="excel-btn" id="exportExcelBtn" disabled>
+          تصدير Excel
+        </button>
+
+        <button type="button" class="png-btn" id="exportPngBtn" disabled>
+          تصدير PNG
+        </button>
+
+        <button type="button" class="primary-btn" id="printInvoiceBtn" disabled>
+          طباعة الفاتورة
+        </button>
+      </div>
+    </section>
+
+    <div id="invoiceMessage" class="message no-print"></div>
+
+    <section id="invoiceContainer" class="hidden">
+      <div class="invoice-paper" id="invoicePaper">
+
+        <div class="invoice-header">
+          <div>
+            <h2>كشف حساب موظف</h2>
+            <p>الفترة: <strong id="invoicePeriod">-</strong></p>
+            <p>اسم الموظف: <strong id="invoiceEmployee">-</strong></p>
+            <p>كود الموظف: <strong id="invoiceEmployeeID">-</strong></p>
+          </div>
+
+          <div class="invoice-brand">
+            TS Logger
+            <p style="font-size:12px;color:#64748b;font-weight:normal">
+              Employee Financial Statement
+            </p>
+          </div>
+        </div>
+
+        <h3 class="invoice-section-title">الملخص المالي</h3>
+
+        <div class="invoice-summary">
+          <div class="summary-card">
+            <span>أيام الحضور</span>
+            <strong id="attendanceDays">0</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>أيام الغياب</span>
+            <strong id="absenceDays">غير متاح</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>سعر الساعة</span>
+            <strong id="hourlyRate">0.00 جنيه</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>إجمالي المستحقات</span>
+            <strong id="totalEntitlements">0.00 جنيه</strong>
+          </div>
+
+          <div class="summary-card">
+            <span>إجمالي الخصومات</span>
+            <strong id="totalDeductions">0.00 جنيه</strong>
+          </div>
+
+          <div class="summary-card net">
+            <span>صافي الراتب</span>
+            <strong id="netSalary">0.00 جنيه</strong>
+          </div>
+        </div>
+
+        <h3 class="invoice-section-title">تفاصيل الشيفتات</h3>
+
+        <div class="invoice-table-wrap">
+          <table class="invoice-table" id="invoiceTable">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>اليوم</th>
+                <th>الحالة</th>
+                <th>الحضور</th>
+                <th>الانصراف</th>
+                <th>ساعات العمل الفعلية</th>
+                <th>ساعات الشيفت</th>
+                <th>قيمة الشيفت</th>
+                <th>إضافي</th>
+                <th>حوافز</th>
+                <th>خصم تأخير</th>
+                <th>خصم انصراف مبكر</th>
+                <th>سلف</th>
+                <th>خصومات أخرى</th>
+                <th>الصافي</th>
+              </tr>
+            </thead>
+
+            <tbody id="invoiceTableBody"></tbody>
+            <tfoot id="invoiceTableFoot"></tfoot>
+          </table>
+        </div>
+
+        <div class="invoice-footer">
+          <span>تم إنشاء التقرير بواسطة TS Logger System</span>
+          <span id="invoiceGeneratedAt"></span>
+        </div>
+
+      </div>
+    </section>
+
+    <section id="invoiceEmpty" class="invoice-empty">
+      اختر الفترة والموظف ثم اضغط على إنشاء الفاتورة.
+    </section>
+
+  </main>
+
+  <!-- Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- PNG export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/invoice.js"></script>
+</body>
+</html>
