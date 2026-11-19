@@ -360,3 +360,39 @@ async function createShiftAdjustment(data) {
 
   return result;
 }
+
+
+
+
+
+
+
+
+
+async function getShiftsByDateRange(startDate, endDate, employeeID) {
+  const params = new URLSearchParams({
+    action: "getShiftsByDateRange",
+    startDate: startDate,
+    endDate: endDate
+  });
+
+  if (employeeID) {
+    params.set("employeeID", employeeID);
+  }
+
+  const response = await fetch(`${API_URL}?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to load invoice data."
+    );
+  }
+
+  return result;
+}
