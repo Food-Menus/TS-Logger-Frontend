@@ -1,0 +1,384 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التعديلات المالية | TS Logger</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    .adjustments-page {
+      max-width: 1100px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .adjustments-page .panel {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--border-color, #ddd);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .adjustments-page h2 {
+      margin: 0 0 18px;
+    }
+
+    .adjustments-page .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .adjustments-page .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .adjustments-page label {
+      font-weight: 600;
+    }
+
+    .adjustments-page input,
+    .adjustments-page select,
+    .adjustments-page textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 11px 12px;
+      border: 1px solid var(--border-color, #ccc);
+      border-radius: 8px;
+      font: inherit;
+      background: var(--input-bg, #fff);
+      color: inherit;
+    }
+
+    .adjustments-page textarea {
+      min-height: 85px;
+      resize: vertical;
+    }
+
+    .adjustments-page button {
+      border: 0;
+      border-radius: 8px;
+      padding: 11px 18px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .adjustments-page button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .adjustments-page .primary-btn {
+      background: #087f8c;
+      color: #fff;
+    }
+
+    .adjustments-page .secondary-btn {
+      background: #64748b;
+      color: #fff;
+    }
+
+    .adjustments-page .danger-btn {
+      background: #b42318;
+      color: #fff;
+    }
+
+    .adjustments-page .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .adjustments-page .message {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+
+    .adjustments-page .message.success {
+      display: block;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .adjustments-page .message.error {
+      display: block;
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .adjustments-page .message.info {
+      display: block;
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .adjustments-page .shift-card {
+      border: 1px solid var(--border-color, #ddd);
+      border-radius: 10px;
+      padding: 15px;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .adjustments-page .shift-card:hover {
+      border-color: #0891b2;
+    }
+
+    .adjustments-page .shift-card.selected {
+      border: 2px solid #0891b2;
+      background: rgba(8, 145, 178, .07);
+    }
+
+    .adjustments-page .shift-card.disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+    .adjustments-page .shift-card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .adjustments-page .shift-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 9px;
+      font-size: .92rem;
+    }
+
+    .adjustments-page .status {
+      display: inline-block;
+      padding: 4px 9px;
+      border-radius: 20px;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+
+    .adjustments-page .status.available {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .adjustments-page .status.locked {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .adjustments-page .preview {
+      background: rgba(8, 145, 178, .08);
+      border: 1px dashed #0891b2;
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .adjustments-page .preview strong {
+      color: #087f8c;
+      font-size: 1.35rem;
+    }
+
+    .adjustments-page .table-wrap {
+      overflow-x: auto;
+    }
+
+    .adjustments-page table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 650px;
+    }
+
+    .adjustments-page th,
+    .adjustments-page td {
+      padding: 11px;
+      border-bottom: 1px solid var(--border-color, #ddd);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .adjustments-page th {
+      background: rgba(100, 116, 139, .1);
+    }
+
+    .adjustments-page .muted {
+      opacity: .7;
+    }
+
+    .adjustments-page .empty {
+      text-align: center;
+      padding: 22px;
+      opacity: .7;
+    }
+
+    .adjustments-page .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .adjustments-page {
+        padding: 12px;
+        margin: 12px auto;
+      }
+
+      .adjustments-page .panel {
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container adjustments-page">
+
+    <header>
+      <h1>TS Logger System</h1>
+      <p>إدارة التعديلات المالية للموظفين</p>
+    </header>
+
+    <nav class="page-navigation">
+      <a href="index.html">الموظفون</a>
+      <a href="attendance.html">الحضور والانصراف</a>
+      <a href="shifts.html">الشيفتات</a>
+      <a href="adjustments.html" class="active">التعديلات المالية</a>
+    </nav>
+
+    <div id="pageMessage" class="message"></div>
+
+    <section class="panel">
+      <h2>1. اختيار التاريخ</h2>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="shiftDate">تاريخ الشيفت</label>
+          <input type="date" id="shiftDate">
+        </div>
+
+        <div class="field" style="justify-content:end">
+          <button type="button" class="primary-btn" id="loadShiftsBtn">
+            عرض الشيفتات
+          </button>
+        </div>
+      </div>
+
+      <div id="shiftsContainer" style="margin-top:18px">
+        <div class="empty">اختر التاريخ لعرض الشيفتات.</div>
+      </div>
+    </section>
+
+    <section id="adjustmentSection" class="panel hidden">
+      <h2>2. إضافة معاملة مالية</h2>
+
+      <div id="selectedShiftInfo"></div>
+
+      <form id="adjustmentForm">
+        <div class="form-grid" style="margin-top:18px">
+
+          <div class="field">
+            <label for="transactionType">نوع المعاملة</label>
+            <select id="transactionType" required>
+              <option value="BONUS">مكافأة</option>
+              <option value="DEDUCTION">خصم</option>
+              <option value="ADVANCE">سلفة</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="calculationMethod">طريقة الحساب</label>
+            <select id="calculationMethod" required>
+              <option value="AMOUNT">مبلغ مباشر (جنيه)</option>
+              <option value="HOUR">بالساعة</option>
+              <option value="MINUTE">بالدقيقة</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="originalValue" id="valueLabel">المبلغ بالجنيه</label>
+            <input
+              type="number"
+              id="originalValue"
+              min="0.01"
+              step="0.01"
+              placeholder="أدخل القيمة"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label for="transactionDate">تاريخ المعاملة</label>
+            <input type="date" id="transactionDate" required>
+          </div>
+
+        </div>
+
+        <div class="field" style="margin-top:16px">
+          <label for="notes">ملاحظات</label>
+          <textarea
+            id="notes"
+            placeholder="اكتب تفاصيل المعاملة (اختياري)"
+          ></textarea>
+        </div>
+
+        <div class="preview">
+          <div>المبلغ النهائي للمعاملة</div>
+          <strong id="calculatedAmount">0.00 جنيه</strong>
+          <div class="muted" id="calculationDetails" style="margin-top:7px">
+            أدخل القيمة لعرض نتيجة الحساب.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="primary-btn" id="saveAdjustmentBtn">
+            حفظ المعاملة
+          </button>
+
+          <button type="button" class="secondary-btn" id="cancelSelectionBtn">
+            إلغاء اختيار الشيفت
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section id="transactionsSection" class="panel hidden">
+      <h2>3. معاملات الشيفت</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>النوع</th>
+              <th>طريقة الحساب</th>
+              <th>القيمة الأصلية</th>
+              <th>المبلغ النهائي</th>
+              <th>التاريخ</th>
+              <th>ملاحظات</th>
+            </tr>
+          </thead>
+
+          <tbody id="transactionsTableBody">
+            <tr>
+              <td colspan="6" class="empty">لا توجد معاملات.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/adjustments.js"></script>
+</body>
+</html>
