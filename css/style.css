@@ -1179,3 +1179,8 @@ tfoot td {
     margin: 10mm;
   }
 }
+
+/* Hide adjustment messages until they have a status */
+.adjustments-page .message:not(.success):not(.error):not(.info) {
+  display: none;
+}
