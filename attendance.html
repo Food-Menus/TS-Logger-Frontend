@@ -10,151 +10,6 @@
 
   <link rel="stylesheet" href="css/style.css">
 
-  <style>
-    [hidden] {
-      display: none !important;
-    }
-
-    .page-navigation {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin: 20px 0;
-    }
-
-    .page-navigation a {
-      display: inline-block;
-      padding: 10px 18px;
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      color: var(--text-main);
-      text-decoration: none;
-      background: rgba(15, 23, 42, 0.7);
-    }
-
-    .page-navigation a.active {
-      border-color: var(--color-primary);
-      color: var(--color-primary);
-    }
-
-    .attendance-section {
-      margin-top: 30px;
-    }
-
-    /* Section selector */
-
-    .section-selector {
-      margin-top: 25px;
-      padding: 20px;
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      background: rgba(15, 23, 42, 0.5);
-    }
-
-    .section-selector label {
-      display: block;
-      margin-bottom: 10px;
-      font-weight: bold;
-    }
-
-    .section-selector select {
-      width: 100%;
-      max-width: 400px;
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    /* Import and raw attendance tables */
-
-    #attendancePreview,
-    #rawAttendancePreview {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 20px;
-    }
-
-    #attendancePreview table,
-    #rawAttendancePreview table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 850px;
-    }
-
-    #attendancePreview th,
-    #attendancePreview td,
-    #rawAttendancePreview th,
-    #rawAttendancePreview td {
-      padding: 12px;
-      text-align: center;
-      border: 1px solid var(--card-border);
-    }
-
-    #attendancePreview th,
-    #rawAttendancePreview th {
-      color: var(--color-primary);
-    }
-
-    #attendanceImportSummary,
-    #rawAttendanceSummary {
-      margin-top: 20px;
-      color: var(--color-success);
-      font-weight: bold;
-    }
-
-    /* Attendance review */
-
-    .filter-group {
-      margin-bottom: 15px;
-    }
-
-    .filter-group input,
-    .filter-group select {
-      width: 100%;
-      max-width: 400px;
-      padding: 10px;
-      border-radius: 8px;
-    }
-
-    #attendanceReviewPreview {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 20px;
-    }
-
-    #attendanceReviewPreview table {
-      width: 100%;
-      min-width: 1100px;
-      border-collapse: collapse;
-    }
-
-    #attendanceReviewPreview th,
-    #attendanceReviewPreview td {
-      padding: 10px;
-      text-align: center;
-      border: 1px solid var(--card-border, #ddd);
-      white-space: nowrap;
-    }
-
-    #attendanceReviewPreview select {
-      min-width: 125px;
-      padding: 8px;
-    }
-
-    .review-status-pending {
-      color: #d97706;
-      font-weight: bold;
-    }
-
-    .review-status-reviewed {
-      color: #0284c7;
-      font-weight: bold;
-    }
-
-    .review-status-approved {
-      color: #16a34a;
-      font-weight: bold;
-    }
-  </style>
 </head>
 
 <body>
@@ -163,11 +18,14 @@
 
     <h1>TS Logger System</h1>
 
-    <nav class="page-navigation">
-      <a href="index.html">إدارة الموظفين</a>
-      <a href="attendance.html" class="active">سجلات البصمات</a>
-      <a href="shifts.html">إدارة الورديات</a>
-    </nav>
+
+<nav class="page-navigation">
+  <a href="index.html">الموظفون</a>
+  <a href="attendance.html" class="active">الحضور والبصمات</a>
+  <a href="shifts.html">الورديات</a>
+  <a href="adjustments.html">التعديلات المالية</a>
+  <a href="invoice.html">الفواتير</a>
+</nav>
 
 
     <!-- Section Selector -->
