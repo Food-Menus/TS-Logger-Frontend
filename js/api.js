@@ -307,3 +307,56 @@ async function createShift(shiftData) {
 
   return result;
 }
+
+
+
+
+
+
+
+
+
+
+
+async function getShiftsByDate(date) {
+  const response = await fetch(
+    `${API_URL}?action=getShiftsByDate&date=${encodeURIComponent(date)}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to load shifts.");
+  }
+
+  return result;
+}
+
+
+async function createShiftAdjustment(data) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "createShiftAdjustment",
+      data: data
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to connect to the server.");
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message || "Failed to create financial transaction."
+    );
+  }
+
+  return result;
+}
