@@ -606,22 +606,29 @@ function formatInvoiceTime(value) {
     return "—";
   }
 
+  // لو القيمة Date، نستخدم UTC لتجنب تحويل المنطقة الزمنية.
   if (value instanceof Date) {
-    return value.toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit"
-    });
+    if (Number.isNaN(value.getTime())) {
+      return "—";
+    }
+
+    const hours = String(value.getUTCHours()).padStart(2, "0");
+    const minutes = String(value.getUTCMinutes()).padStart(2, "0");
+
+    return `${hours}:${minutes}`;
   }
 
-  const text = String(value);
+  const text = String(value).trim();
 
-  const timeMatch = text.match(/T(\d{2}):(\d{2})/);
+  // وقت داخل قيمة ISO مثل 2026-11-20T06:00:00.000Z
+  const isoMatch = text.match(/T(\d{2}):(\d{2})(?::\d{2})?/);
 
-  if (timeMatch) {
-    return `${timeMatch[1]}:${timeMatch[2]}`;
+  if (isoMatch) {
+    return `${isoMatch[1]}:${isoMatch[2]}`;
   }
 
-  const directMatch = text.match(/^(\d{1,2}):(\d{2})/);
+  // وقت مباشر مثل 06:00:00 أو 6:00
+  const directMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
 
   if (directMatch) {
     return `${directMatch[1].padStart(2, "0")}:${directMatch[2]}`;
