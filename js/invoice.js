@@ -177,7 +177,13 @@ async function generateInvoice() {
     const records = Array.isArray(result.records)
       ? result.records
       : [];
-
+console.log("Invoice API Raw Result:", result);
+console.log("First Shift Time Values:", {
+  actualCheckIn: records[0]?.actualCheckIn,
+  actualCheckOut: records[0]?.actualCheckOut,
+  checkInType: typeof records[0]?.actualCheckIn,
+  checkOutType: typeof records[0]?.actualCheckOut
+});
     // حماية إضافية: لا نعرض بيانات موظف آخر حتى لو رجعها الخادم بالخطأ.
     const employeeRecords = records.filter(
       record => String(record.employeeID) === String(employeeID)
