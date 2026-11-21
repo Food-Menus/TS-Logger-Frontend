@@ -179,8 +179,6 @@ async function generateInvoice() {
       ? result.records
       : [];
 
-    // حماية إضافية: لا نعرض بيانات موظف آخر
-    // حتى لو رجعها الخادم بالخطأ.
     const employeeRecords = records.filter(
       record => String(record.employeeID) === String(employeeID)
     );
@@ -253,7 +251,6 @@ function renderInvoice() {
   document.getElementById("attendanceDays").textContent =
     totals.attendanceDays;
 
-  // لا يوجد حاليًا مصدر مستقل ومعتمد لحساب أيام الغياب.
   document.getElementById("absenceDays").textContent =
     "غير متاح";
 
@@ -336,8 +333,6 @@ function calculateInvoiceTotals(records, employee) {
     totals.netSalary += toNumber(record.totalAmount);
   });
 
-  // متوسط مرجح لأجر الساعة حسب ساعات الورديات.
-  // إذا لم تتوفر ساعات وردية، نستخدم أجر الموظف المسجل.
   if (totalRateHours > 0) {
     totals.hourlyRate = weightedRateTotal / totalRateHours;
   } else {
@@ -412,19 +407,18 @@ function renderInvoiceTable(records, totals) {
     formatMoney(totals.netSalary)
   ];
 
-  footerValues.forEach((value, index) => {
+  footerValues.forEach(value => {
     const cell = document.createElement("td");
     cell.textContent = value;
-
-    if (index === 0) {
-      cell.colSpan = 1;
-    }
-
     totalRow.appendChild(cell);
   });
 
   tfoot.appendChild(totalRow);
 }
+
+/* =========================================================
+   Excel Export
+   ========================================================= */
 
 function exportInvoiceToExcel() {
   if (!invoiceState.records.length || !invoiceState.selectedEmployee) {
@@ -433,51 +427,234 @@ function exportInvoiceToExcel() {
   }
 
   if (typeof XLSX === "undefined") {
-    showInvoiceMessage("تعذر تحميل مكتبة Excel. تحقق من اتصال الإنترنت.", true);
+    showInvoiceMessage(
+      "تعذر تحميل مكتبة Excel. تحقق من اتصال الإنترنت.",
+      true
+    );
     return;
   }
 
   const employee = invoiceState.selectedEmployee;
   const totals = invoiceState.totals;
 
-  const rows = invoiceState.records.map(record => ({
-    "التاريخ": formatDate(record.shiftDate),
-    "اليوم": record.dayName || getDayName(record.shiftDate),
-    "الحالة": getShiftStatusLabel(record.status),
-    "الحضور": formatInvoiceTime(record.actualCheckIn),
-    "الانصراف": formatInvoiceTime(record.actualCheckOut),
-    "ساعات العمل الفعلية": (toNumber(record.actualDurationMinutes) / 60).toFixed(2),
-    "ساعات الوردية": toNumber(record.shiftHours),
-    "قيمة الوردية": toNumber(record.shiftValue),
-    "إضافي مالي": toNumber(record.additionalAmount),
-    "الحوافز": toNumber(record.incentives),
-    "خصم التأخير": toNumber(record.lateDeduction),
-    "خصم الانصراف المبكر": toNumber(record.earlyLeaveDeduction),
-    "السلف": toNumber(record.advances),
-    "خصومات أخرى": toNumber(record.generalDeduction),
-    "صافي الوردية": toNumber(record.totalAmount)
-  }));
+  const employeeName = employee.employeeName || "—";
+  const employeeID = employee.employeeID;
 
-  rows.push({
-    "التاريخ": "الإجمالي",
-    "اليوم": "",
-    "الحالة": "",
-    "الحضور": "",
-    "الانصراف": "",
-    "ساعات العمل الفعلية": totals.actualHours,
-    "ساعات الوردية": totals.shiftHours,
-    "قيمة الوردية": totals.shiftValue,
-    "إضافي مالي": totals.additionalAmount,
-    "الحوافز": totals.incentives,
-    "خصم التأخير": totals.lateDeduction,
-    "خصم الانصراف المبكر": totals.earlyLeaveDeduction,
-    "السلف": totals.advances,
-    "خصومات أخرى": totals.generalDeduction,
-    "صافي الوردية": totals.netSalary
+  const periodText =
+    `${formatDate(invoiceState.startDate)} - ${formatDate(invoiceState.endDate)}`;
+
+  /*
+   * إنشاء ورقة Excel متكاملة:
+   * 1. عنوان الفاتورة.
+   * 2. بيانات الموظف.
+   * 3. الفترة.
+   * 4. ملخص الحساب.
+   * 5. جدول الورديات.
+   * 6. الإجماليات.
+   */
+
+  const sheetData = [
+    ["كشف حساب موظف"],
+    [`اسم الموظف: ${employeeName}     |     رقم الموظف: ${employeeID}`],
+    [`الفترة: ${periodText}`],
+    [],
+    [
+      "أيام الحضور",
+      "",
+      "",
+      "",
+      "",
+      "متوسط أجر الساعة",
+      "",
+      "",
+      "",
+      "",
+      "إجمالي المستحقات",
+      "",
+      "",
+      "",
+      ""
+    ],
+    [
+      totals.attendanceDays,
+      "",
+      "",
+      "",
+      "",
+      totals.hourlyRate,
+      "",
+      "",
+      "",
+      "",
+      totals.totalEntitlements,
+      "",
+      "",
+      "",
+      ""
+    ],
+    [
+      "أيام الغياب",
+      "",
+      "",
+      "",
+      "",
+      "إجمالي الخصومات",
+      "",
+      "",
+      "",
+      "",
+      "صافي المستحق",
+      "",
+      "",
+      "",
+      ""
+    ],
+    [
+      "غير متاح",
+      "",
+      "",
+      "",
+      "",
+      totals.totalDeductions,
+      "",
+      "",
+      "",
+      "",
+      totals.netSalary,
+      "",
+      "",
+      "",
+      ""
+    ],
+    [],
+    [
+      "التاريخ",
+      "اليوم",
+      "الحالة",
+      "الحضور",
+      "الانصراف",
+      "ساعات العمل الفعلية",
+      "ساعات الوردية",
+      "قيمة الوردية",
+      "إضافي مالي",
+      "الحوافز",
+      "خصم التأخير",
+      "خصم الانصراف المبكر",
+      "السلف",
+      "خصومات أخرى",
+      "صافي الوردية"
+    ]
+  ];
+
+  invoiceState.records.forEach(record => {
+    sheetData.push([
+      formatDate(record.shiftDate),
+      record.dayName || getDayName(record.shiftDate),
+      getShiftStatusLabel(record.status),
+      formatInvoiceTime(record.actualCheckIn),
+      formatInvoiceTime(record.actualCheckOut),
+      toNumber(record.actualDurationMinutes) / 60,
+      toNumber(record.shiftHours),
+      toNumber(record.shiftValue),
+      toNumber(record.additionalAmount),
+      toNumber(record.incentives),
+      toNumber(record.lateDeduction),
+      toNumber(record.earlyLeaveDeduction),
+      toNumber(record.advances),
+      toNumber(record.generalDeduction),
+      toNumber(record.totalAmount)
+    ]);
   });
 
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-  worksheet["!views"] = [{ rightToLeft: true }];
+  sheetData.push([
+    "الإجمالي",
+    "",
+    "",
+    "",
+    "",
+    totals.actualHours,
+    totals.shiftHours,
+    totals.shiftValue,
+    totals.additionalAmount,
+    totals.incentives,
+    totals.lateDeduction,
+    totals.earlyLeaveDeduction,
+    totals.advances,
+    totals.generalDeduction,
+    totals.netSalary
+  ]);
+
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+  // اتجاه الورقة من اليمين إلى اليسار.
+  worksheet["!views"] = [
+    {
+      rightToLeft: true,
+      state: "frozen",
+      ySplit: 10
+    }
+  ];
+
+  // دمج خلايا عنوان الفاتورة وبيانات الموظف والفترة.
+  worksheet["!merges"] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 14 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 14 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 14 } },
+
+    { s: { r: 4, c: 0 }, e: { r: 4, c: 4 } },
+    { s: { r: 4, c: 5 }, e: { r: 4, c: 9 } },
+    { s: { r: 4, c: 10 }, e: { r: 4, c: 14 } },
+
+    { s: { r: 5, c: 0 }, e: { r: 5, c: 4 } },
+    { s: { r: 5, c: 5 }, e: { r: 5, c: 9 } },
+    { s: { r: 5, c: 10 }, e: { r: 5, c: 14 } },
+
+    { s: { r: 6, c: 0 }, e: { r: 6, c: 4 } },
+    { s: { r: 6, c: 5 }, e: { r: 6, c: 9 } },
+    { s: { r: 6, c: 10 }, e: { r: 6, c: 14 } },
+
+    { s: { r: 7, c: 0 }, e: { r: 7, c: 4 } },
+    { s: { r: 7, c: 5 }, e: { r: 7, c: 9 } },
+    { s: { r: 7, c: 10 }, e: { r: 7, c: 14 } }
+  ];
+
+  // عرض الأعمدة.
+  worksheet["!cols"] = [
+    { wch: 13 },
+    { wch: 13 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 15 },
+    { wch: 13 },
+    { wch: 13 },
+    { wch: 14 },
+    { wch: 19 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 15 }
+  ];
+
+  // ارتفاع الصفوف.
+  worksheet["!rows"] = [
+    { hpt: 28 },
+    { hpt: 23 },
+    { hpt: 23 },
+    { hpt: 10 },
+    { hpt: 22 },
+    { hpt: 25 },
+    { hpt: 22 },
+    { hpt: 25 },
+    { hpt: 12 },
+    { hpt: 35 }
+  ];
+
+  // نطاق الطباعة عند فتح الملف في Excel.
+  worksheet["!autofilter"] = {
+    ref: `A10:O${10 + invoiceState.records.length}`
+  };
 
   const workbook = XLSX.utils.book_new();
 
@@ -488,13 +665,20 @@ function exportInvoiceToExcel() {
   );
 
   const fileName =
-    `فاتورة_${safeFileName(employee.employeeName)}_` +
+    `فاتورة_${safeFileName(employeeName)}_` +
     `${invoiceState.startDate}_${invoiceState.endDate}.xlsx`;
 
   XLSX.writeFile(workbook, fileName);
 
-  showInvoiceMessage("تم تصدير ملف Excel بنجاح.", false);
+  showInvoiceMessage(
+    "تم تصدير الفاتورة كاملة إلى Excel بنجاح.",
+    false
+  );
 }
+
+/* =========================================================
+   PNG Export
+   ========================================================= */
 
 async function exportInvoiceToPng() {
   const invoicePaper = document.getElementById("invoicePaper");
@@ -508,7 +692,10 @@ async function exportInvoiceToPng() {
   }
 
   if (typeof html2canvas === "undefined") {
-    showInvoiceMessage("تعذر تحميل مكتبة تصدير الصور. تحقق من اتصال الإنترنت.", true);
+    showInvoiceMessage(
+      "تعذر تحميل مكتبة تصدير الصور. تحقق من اتصال الإنترنت.",
+      true
+    );
     return;
   }
 
@@ -540,6 +727,10 @@ async function exportInvoiceToPng() {
   }
 }
 
+/* =========================================================
+   Print
+   ========================================================= */
+
 function printInvoice() {
   if (!invoiceState.records.length) {
     showInvoiceMessage("أنشئ الفاتورة أولًا.", true);
@@ -554,6 +745,10 @@ function setExportButtonsEnabled(enabled) {
   document.getElementById("exportPngBtn").disabled = !enabled;
   document.getElementById("printInvoiceBtn").disabled = !enabled;
 }
+
+/* =========================================================
+   Messages
+   ========================================================= */
 
 function showInvoiceMessage(message, isError) {
   const element = document.getElementById("invoiceMessage");
@@ -570,6 +765,10 @@ function hideInvoiceMessage() {
   element.style.display = "none";
   element.classList.remove("error");
 }
+
+/* =========================================================
+   Helpers
+   ========================================================= */
 
 function toNumber(value) {
   const number = Number(value);
@@ -608,7 +807,6 @@ function formatInvoiceTime(value) {
     return "—";
   }
 
-  // تحويل Date إلى توقيت القاهرة.
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) {
       return "—";
@@ -619,8 +817,6 @@ function formatInvoiceTime(value) {
 
   const text = String(value).trim();
 
-  // ISO timestamp يحتوي على تاريخ ووقت.
-  // مثال: 1899-12-30T03:54:51.000Z
   const isoMatch = text.match(
     /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/
   );
@@ -635,8 +831,6 @@ function formatInvoiceTime(value) {
     return formatTimeInCairo(date);
   }
 
-  // وقت مباشر بدون تاريخ أو timezone.
-  // مثال: 06:00:00 أو 6:00
   const directMatch = text.match(
     /^(\d{1,2}):(\d{2})(?::\d{2})?$/
   );
