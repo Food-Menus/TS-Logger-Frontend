@@ -4,7 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>فاتورة الموظف</title>
+  <style>
+    /* ملخص أسفل الجدول - جنب بعض بشكل أفقي ثابت */
+.slip-bottom-summary {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: nowrap; /* يمنع نزول العناصر تحت بعض */
+  gap: 15px;
+  margin-top: 10px;
+  padding: 4px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  width: 100%;
+  box-sizing: border-box;
+}
 
+/* العمود اليمين: الحضور والغياب */
+.slip-col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: right;
+}
+
+/* العمود الأوسط: قيمة الساعة */
+.slip-col-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: center;
+}
+
+/* العمود الشمال: الاستحقاقات والاستقطاعات والصافي */
+.slip-col-left {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 260px;
+}
+
+.slip-stat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.slip-money-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  white-space: nowrap;
+}
+
+.slip-net-row {
+  border-top: 2px solid #000000;
+  padding-top: 5px;
+  margin-top: 2px;
+  font-size: 14.5px;
+  font-weight: 900;
+}
+  </style>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/invoice-print.css">
 </head>
