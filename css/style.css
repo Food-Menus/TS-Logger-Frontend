@@ -1133,53 +1133,276 @@ tfoot td {
 
 
 /* 16. Print */
+/* =========================================================
+   16. Invoice Print Layout
+   ========================================================= */
 
 @media print {
+
+  /* إعداد الصفحة */
+  @page {
+    size: A4 landscape;
+    margin: 7mm;
+  }
+
+  html,
   body {
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
+    font-family: Tahoma, Arial, sans-serif !important;
+    font-size: 9px !important;
+  }
+
+  /* إخفاء عناصر الموقع */
+  body > * {
+    background: #fff !important;
   }
 
   .no-print,
-  .page-navigation {
+  .page-navigation,
+  header,
+  .invoice-actions,
+  .invoice-message {
     display: none !important;
   }
 
+  /* إلغاء تصميم الحاوية */
   .container,
   .invoice-page {
     width: 100% !important;
     max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-
-  .invoice-paper {
-    display: block !important;
-    padding: 0 !important;
-    border: 0 !important;
+    border: none !important;
     box-shadow: none !important;
   }
 
-  .invoice-table-wrapper {
+  /* ورقة الفاتورة */
+  #invoicePaper,
+  .invoice-paper {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
     overflow: visible !important;
   }
 
-  .invoice-table {
+  /* رأس الكشف */
+  .invoice-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+
+    margin: 0 0 5px !important;
+    padding: 3px 5px !important;
+
+    border: none !important;
+    text-align: right !important;
+  }
+
+  .invoice-header h2 {
+    display: none !important;
+  }
+
+  .invoice-header p {
+    margin: 0 !important;
+    padding: 2px 4px !important;
+    color: #000 !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+  }
+
+  /* بيانات الموظف */
+  .invoice-employee-info {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    gap: 15px !important;
+
+    margin: 0 0 5px !important;
+    padding: 3px 5px !important;
+
+    border: none !important;
+  }
+
+  .invoice-info-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 5px !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  .invoice-info-item span {
+    margin: 0 !important;
+    color: #000 !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+  }
+
+  .invoice-info-item strong {
+    color: #000 !important;
+    font-size: 9px !important;
+    font-weight: normal !important;
+  }
+
+  /* العناوين */
+  #invoicePaper > h3 {
+    margin: 4px 0 3px !important;
+    padding: 2px 4px !important;
+    font-size: 10px !important;
+    font-weight: bold !important;
+    color: #000 !important;
+    border: none !important;
+  }
+
+  /* ملخص الحساب */
+  .invoice-summary {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    gap: 3px !important;
+
+    margin: 3px 0 6px !important;
+    padding: 0 !important;
+  }
+
+  .invoice-summary-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+
     min-width: 0 !important;
+    margin: 0 !important;
+    padding: 4px 3px !important;
+
+    border: 1px solid #777 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .invoice-summary-card span {
+    margin: 0 !important;
+    color: #000 !important;
     font-size: 8px !important;
+    font-weight: bold !important;
+  }
+
+  .invoice-summary-card strong {
+    color: #000 !important;
+    font-size: 9px !important;
+    font-weight: bold !important;
+  }
+
+  .invoice-summary-card.net {
+    background: #fff !important;
+    border-color: #000 !important;
+  }
+
+  .invoice-summary-card.net strong {
+    color: #000 !important;
+  }
+
+  /* جدول الفاتورة */
+  .invoice-table-wrapper {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+
+    overflow: visible !important;
+
+    border: none !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+  }
+
+  .invoice-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+
+    font-size: 7px !important;
+    color: #000 !important;
   }
 
   .invoice-table th,
   .invoice-table td {
-    padding: 4px 2px !important;
+    padding: 3px 2px !important;
+
+    border: 1px solid #000 !important;
+
+    text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+
+    font-size: 7px !important;
+    color: #000 !important;
   }
 
-  @page {
-    size: landscape;
-    margin: 10mm;
+  .invoice-table thead th {
+    background: #fff !important;
+    color: #000 !important;
+    font-weight: bold !important;
+  }
+
+  .invoice-table tbody tr:nth-child(even) td,
+  .invoice-table tbody tr:nth-child(odd) td {
+    background: #fff !important;
+  }
+
+  .invoice-table tbody tr:hover td {
+    background: #fff !important;
+  }
+
+  .invoice-table tfoot td {
+    background: #fff !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    border-top: 2px solid #000 !important;
+  }
+
+  .invoice-net-value {
+    font-weight: bold !important;
+  }
+
+  /* منع تقسيم صف الجدول بين الصفحات */
+  .invoice-table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* إخفاء الفوتر الخاص بالموقع */
+  .invoice-footer {
+    display: none !important;
+  }
+
+  /* منع تأثيرات الشاشة */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 }
-
 /* Hide adjustment messages until they have a status */
 .adjustments-page .message:not(.success):not(.error):not(.info) {
   display: none;
