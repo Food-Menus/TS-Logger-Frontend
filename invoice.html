@@ -303,5 +303,231 @@
       observer.observe(document.getElementById('invoicePaper'), { childList: true, subtree: true, characterData: true });
     })();
   </script>
+  <!-- مكتبة ExcelJS لتوليد ملف .xlsx بتنسيقات كاملة مطابقة للقالب -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+
+<script>
+  (function () {
+    const excelBtn = document.getElementById('exportExcelBtn');
+    if (!excelBtn) return;
+
+    // أبعاد الأعمدة (بالحرف) كما في ملف 91 - ياسر كساب.xls
+    const COL_WIDTHS = [
+      2.57, 2.86, 6.86, 1.71, 6.86, 1.71, 8.57, 3.43, 7.43, 2.14, 3.29, 7.14,
+      1.29, 5.14, 1.71, 1.0, 7.14, 2.71, 1.14, 10.14, 1.43, 1.29, 5.86, 1.0,
+      3.0, 7.43, 1.43, 11.43, 2.57, 5.43, 9.57, 1.0, 12.0, 1.43, 1.14, 6.86
+    ];
+
+    // ارتفاع الصفوف الثابتة (بالنقطة pt)
+    const BASE_ROW_HEIGHTS = {
+      1: 15.75, 2: 1.5, 3: 22.5, 4: 3.75, 5: 2.25, 6: 15.0
+    };
+
+    // خريطة أعمدة الجدول الـ 14 (0-based index داخل ExcelJS: col + 1)
+    // الترتيب في الفاتورة: [التاريخ, اليوم, الحالة, الحضور, الانصراف, عدد ساعات, عدد س الوردية, قيمة الوردية, اضافي, حوافز, التأخير, انصراف مبكر, سلف, خصم]
+    const TABLE_COL_MAP = [
+      { idx: 0, startCol: 32, endCol: 32, align: 'center', numFmt: 'm/d/yy' }, // AG: التاريخ
+      { idx: 1, startCol: 30, endCol: 31, align: 'center', numFmt: '@' },     // AE:AF: اليوم
+      { idx: 2, startCol: 28, endCol: 29, align: 'center', numFmt: '@' },     // AC:AD: الحالة
+      { idx: 3, startCol: 27, endCol: 27, align: 'center', numFmt: '@' },     // AB: الحضور
+      { idx: 4, startCol: 24, endCol: 25, align: 'center', numFmt: '@' },     // Y:Z: الانصراف
+      { idx: 5, startCol: 21, endCol: 22, align: 'center', numFmt: '0.00' },  // V:W: عدد ساعات
+      { idx: 6, startCol: 19, endCol: 19, align: 'center', numFmt: '0.00' },  // T: عدد س الوردية
+      { idx: 7, startCol: 16, endCol: 17, align: 'center', numFmt: '0.00;0.00\\-;\\-' }, // Q:R: قيمة الوردية
+      { idx: 8, startCol: 13, endCol: 14, align: 'center', numFmt: '0.00;0.00\\-;\\-' }, // N:O: اضافي
+      { idx: 9, startCol: 11, endCol: 11, align: 'center', numFmt: '0.00;0.00\\-;\\-' }, // L: حوافز
+      { idx: 10, startCol: 8, endCol: 9, align: 'center', numFmt: '0.00;0.00\\-;\\-' },  // I:J: التأخير
+      { idx: 11, startCol: 6, endCol: 6, align: 'center', numFmt: '0.00;0.00\\-;\\-' },  // G: انصراف مبكر
+      { idx: 12, startCol: 4, endCol: 4, align: 'center', numFmt: '0.00;0.00\\-;\\-' },  // E: سلف
+      { idx: 13, startCol: 2, endCol: 2, align: 'center', numFmt: '0.00;0.00\\-;\\-' }   // C: خصم
+    ];
+
+    function makeFont(size, bold = false) {
+      return {
+        name: 'Arial',
+        size,
+        bold,
+        color: { argb: 'FF000000' }
+      };
+    }
+
+    function parseNumOrZero(txt) {
+      if (!txt || txt === '-' || txt === '—') return 0;
+      const cleaned = txt.replace(/,/g, '').replace(/ج\.م/g, '').trim();
+      const n = parseFloat(cleaned);
+      return isNaN(n) ? txt : n;
+    }
+
+    function setMergedValue(ws, r1, c1, r2, c2, value, font, alignment, numFmt = null) {
+      if (r1 !== r2 || c1 !== c2) {
+        ws.mergeCells(r1, c1, r2, c2);
+      }
+      const cell = ws.getCell(r1, c1);
+      cell.value = value;
+      if (font) cell.font = font;
+      if (alignment) cell.alignment = alignment;
+      if (numFmt) cell.numFmt = numFmt;
+    }
+
+    excelBtn.addEventListener('click', async function (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (typeof ExcelJS === 'undefined') {
+        alert('مكتبة ExcelJS غير محملة');
+        return;
+      }
+
+      const empName = document.getElementById('infoEmployeeName')?.textContent.trim() || '—';
+      const startDate = document.getElementById('displayStartDate')?.textContent.trim() || '—';
+      const endDate = document.getElementById('displayEndDate')?.textContent.trim() || '—';
+
+      const attDays = parseNumOrZero(document.getElementById('attendanceDays')?.textContent);
+      const absDays = parseNumOrZero(document.getElementById('absenceDays')?.textContent);
+      const hourlyRate = parseNumOrZero(document.getElementById('hourlyRate')?.textContent);
+      const totalEnt = parseNumOrZero(document.getElementById('totalEntitlements')?.textContent);
+      const totalDed = parseNumOrZero(document.getElementById('totalDeductions')?.textContent);
+      const netSalary = parseNumOrZero(document.getElementById('netSalary')?.textContent);
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet('Sheet1', {
+        views: [{ rightToLeft: true }]
+      });
+
+      // ضبط عرض الأعمدة
+      COL_WIDTHS.forEach((w, i) => {
+        ws.getColumn(i + 1).width = w;
+      });
+
+      // ضبط ارتفاع الصفوف العلوية
+      Object.entries(BASE_ROW_HEIGHTS).forEach(([r, h]) => {
+        ws.getRow(Number(r)).height = h;
+      });
+
+      // الصف 1: التواريخ
+      setMergedValue(ws, 1, 10, 1, 14, endDate, makeFont(12, false), { horizontal: 'center', vertical: 'middle' });
+      setMergedValue(ws, 1, 15, 1, 17, 'الى تاريخ :', makeFont(12, true), { horizontal: 'center', vertical: 'middle' });
+      setMergedValue(ws, 1, 18, 1, 21, startDate, makeFont(12, false), { horizontal: 'center', vertical: 'middle' });
+      setMergedValue(ws, 1, 23, 1, 25, 'من تاريخ :', makeFont(12, true), { horizontal: 'center', vertical: 'middle' });
+
+      // الصف 3: اسم الموظف
+      setMergedValue(ws, 3, 24, 3, 31, empName, makeFont(17, true), { horizontal: 'center', vertical: 'middle' });
+      setMergedValue(ws, 3, 33, 3, 33, 'الموظف :', makeFont(17, true), { horizontal: 'center', vertical: 'middle' });
+
+      // الصف 5 و 6: عناوين الجدول
+      setMergedValue(ws, 5, 20, 6, 20, 'عدد س الوردية', makeFont(10, true), { horizontal: 'center', vertical: 'middle', wrapText: true });
+
+      const headersRow6 = [
+        { c1: 33, c2: 33, text: 'التاريخ' },
+        { c1: 31, c2: 32, text: 'اليوم' },
+        { c1: 29, c2: 30, text: 'الحالة' },
+        { c1: 28, c2: 28, text: 'الحضور' },
+        { c1: 25, c2: 26, text: 'الانصراف' },
+        { c1: 22, c2: 23, text: 'عدد ساعات ' },
+        { c1: 17, c2: 18, text: 'قيمة الوردية' },
+        { c1: 14, c2: 15, text: 'اضافى' },
+        { c1: 12, c2: 12, text: 'حوافز' },
+        { c1: 9,  c2: 10, text: 'التأخير' },
+        { c1: 7,  c2: 7,  text: 'انصراف مبكر' },
+        { c1: 5,  c2: 5,  text: 'سلف' },
+        { c1: 3,  c2: 3,  text: 'خصم' }
+      ];
+      headersRow6.forEach(h => {
+        setMergedValue(ws, 6, h.c1, 6, h.c2, h.text, makeFont(10, true), { horizontal: 'center', vertical: 'middle' });
+      });
+
+      // استخراج صفوف البيانات من tbody
+      let currentRow = 8;
+      const bodyRows = document.querySelectorAll('#invoiceTableBody tr');
+      bodyRows.forEach(tr => {
+        const cells = Array.from(tr.children).slice(0, 14);
+        if (cells.length === 14) {
+          ws.getRow(currentRow).height = 14.25;
+          TABLE_COL_MAP.forEach(colCfg => {
+            const rawText = cells[colCfg.idx]?.textContent.trim() || '';
+            const val = colCfg.numFmt === '@' ? rawText : parseNumOrZero(rawText);
+            setMergedValue(
+              ws,
+              currentRow,
+              colCfg.startCol,
+              currentRow,
+              colCfg.endCol,
+              val,
+              makeFont(10, false),
+              { horizontal: colCfg.align, vertical: 'middle' },
+              colCfg.numFmt !== '@' ? colCfg.numFmt : null
+            );
+          });
+          currentRow += 2; // صف فاصل رفيع مثل القالب
+        }
+      });
+
+      // صف الإجماليات من tfoot أو من الملخص
+      const footCells = Array.from(document.querySelectorAll('#invoiceTableFooter tr:first-child td, #invoiceTableFooter tr:first-child th')).slice(0, 14);
+      if (footCells.length === 14) {
+        currentRow += 1;
+        ws.getRow(currentRow).height = 12.75;
+        TABLE_COL_MAP.forEach(colCfg => {
+          const rawText = footCells[colCfg.idx]?.textContent.trim() || '';
+          const val = colCfg.numFmt === '@' ? rawText : parseNumOrZero(rawText);
+          setMergedValue(
+            ws,
+            currentRow,
+            colCfg.startCol,
+            currentRow,
+            colCfg.endCol,
+            val,
+            makeFont(10, true),
+            { horizontal: colCfg.align, vertical: 'middle' },
+            colCfg.numFmt !== '@' ? colCfg.numFmt : null
+          );
+        });
+      }
+
+      // الملخص السفلي (بنفس المواقع والدمج والخطوط)
+      const sumStartRow = Math.max(currentRow + 2, 20);
+      ws.getRow(sumStartRow).height = 18.75;
+      ws.getRow(sumStartRow + 3).height = 18.75;
+      ws.getRow(sumStartRow + 8).height = 18.75;
+
+      // الاستحقاقات
+      setMergedValue(ws, sumStartRow, 2, sumStartRow, 5, totalEnt, makeFont(14, true), { horizontal: 'center', vertical: 'middle' }, '#,##0.00;#,##0.00\\-;\\-');
+      setMergedValue(ws, sumStartRow, 7, sumStartRow + 2, 11, 'اجمالى الاستحقاقات :', makeFont(14, true), { horizontal: 'left', vertical: 'middle' });
+
+      // قيمة الساعة والحضور
+      setMergedValue(ws, sumStartRow, 20, sumStartRow, 21, hourlyRate, makeFont(12, true), { horizontal: 'center', vertical: 'middle' }, '#,##0.00;#,##0.00\\-;\\-');
+      setMergedValue(ws, sumStartRow, 23, sumStartRow, 26, 'قيمة ساعة الموظف  :', makeFont(12, true), { horizontal: 'left', vertical: 'middle' });
+      setMergedValue(ws, sumStartRow, 30, sumStartRow, 31, attDays, makeFont(14, true), { horizontal: 'center', vertical: 'middle' }, '0;0\\-;\\-');
+      setMergedValue(ws, sumStartRow, 33, sumStartRow, 35, 'عدد ايام الحضور:', makeFont(14, true), { horizontal: 'left', vertical: 'middle' });
+
+      // الاستقطاعات والغياب
+      const dedRow = sumStartRow + 3;
+      setMergedValue(ws, dedRow, 2, dedRow, 5, totalDed, makeFont(14, true), { horizontal: 'center', vertical: 'middle' }, '#,##0.00;#,##0.00\\-;\\-');
+      setMergedValue(ws, dedRow, 7, dedRow + 2, 11, ' اجمالى الاستقطاعات :', makeFont(14, true), { horizontal: 'left', vertical: 'middle' });
+      setMergedValue(ws, dedRow, 30, dedRow, 31, absDays, makeFont(14, true), { horizontal: 'center', vertical: 'middle' }, '0;0\\-;\\-');
+      setMergedValue(ws, dedRow, 33, dedRow + 1, 36, 'عدد ايام الغيـــاب: ', makeFont(14, true), { horizontal: 'left', vertical: 'middle' });
+
+      // الصافي
+      const netRow = sumStartRow + 8;
+      setMergedValue(ws, netRow, 2, netRow, 5, netSalary, makeFont(14, true), { horizontal: 'center', vertical: 'middle' }, '#,##0.00;#,##0.00\\-');
+      setMergedValue(ws, netRow, 7, netRow + 1, 11, ' الصـــــــــــــــــــــافى :', makeFont(14, true), { horizontal: 'left', vertical: 'middle' });
+
+      // تحميل الملف بصيغة .xlsx
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = empName.replace(/[\\/:*?"<>|]/g, '_');
+      a.href = url;
+      a.download = `${safeName}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, true);
+  })();
+</script>
 </body>
 </html>
