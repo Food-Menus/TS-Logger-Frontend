@@ -68,7 +68,8 @@ async function loadInvoiceEmployees() {
   const employeeSelect = document.getElementById("employeeSelect");
 
   try {
-    employeeSelect.innerHTML = '<option value="">جاري تحميل الموظفين...</option>';
+    employeeSelect.innerHTML =
+      '<option value="">جاري تحميل الموظفين...</option>';
 
     const employees = await getEmployees();
 
@@ -177,14 +178,9 @@ async function generateInvoice() {
     const records = Array.isArray(result.records)
       ? result.records
       : [];
-console.log("Invoice API Raw Result:", result);
-console.log("First Shift Time Values:", {
-  actualCheckIn: records[0]?.actualCheckIn,
-  actualCheckOut: records[0]?.actualCheckOut,
-  checkInType: typeof records[0]?.actualCheckIn,
-  checkOutType: typeof records[0]?.actualCheckOut
-});
-    // حماية إضافية: لا نعرض بيانات موظف آخر حتى لو رجعها الخادم بالخطأ.
+
+    // حماية إضافية: لا نعرض بيانات موظف آخر
+    // حتى لو رجعها الخادم بالخطأ.
     const employeeRecords = records.filter(
       record => String(record.employeeID) === String(employeeID)
     );
@@ -612,35 +608,53 @@ function formatInvoiceTime(value) {
     return "—";
   }
 
-  // لو القيمة Date، نستخدم UTC لتجنب تحويل المنطقة الزمنية.
+  // تحويل Date إلى توقيت القاهرة.
   if (value instanceof Date) {
     if (Number.isNaN(value.getTime())) {
       return "—";
     }
 
-    const hours = String(value.getUTCHours()).padStart(2, "0");
-    const minutes = String(value.getUTCMinutes()).padStart(2, "0");
-
-    return `${hours}:${minutes}`;
+    return formatTimeInCairo(value);
   }
 
   const text = String(value).trim();
 
-  // وقت داخل قيمة ISO مثل 2026-11-20T06:00:00.000Z
-  const isoMatch = text.match(/T(\d{2}):(\d{2})(?::\d{2})?/);
+  // ISO timestamp يحتوي على تاريخ ووقت.
+  // مثال: 1899-12-30T03:54:51.000Z
+  const isoMatch = text.match(
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/
+  );
 
   if (isoMatch) {
-    return `${isoMatch[1]}:${isoMatch[2]}`;
+    const date = new Date(text);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return formatTimeInCairo(date);
   }
 
-  // وقت مباشر مثل 06:00:00 أو 6:00
-  const directMatch = text.match(/^(\d{1,2}):(\d{2})(?::\d{2})?/);
+  // وقت مباشر بدون تاريخ أو timezone.
+  // مثال: 06:00:00 أو 6:00
+  const directMatch = text.match(
+    /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+  );
 
   if (directMatch) {
     return `${directMatch[1].padStart(2, "0")}:${directMatch[2]}`;
   }
 
   return text;
+}
+
+function formatTimeInCairo(date) {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Cairo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).format(date);
 }
 
 function getDayName(value) {
